@@ -1,9 +1,11 @@
 
-<div font-size="72pt" color="purple" align="center">
-<p>
+<style>
+p {
+  color: "red";
+}
+</style>
+
+
 This isn't the code you're looking for.
-</p>
-<p font-size="70%">
+
 Move on...
-</p>
-</div>
