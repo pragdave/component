@@ -18,15 +18,11 @@ defmodule Component.Strategy.Common do
     n_way_implementation(:two_way, __CALLER__.module, call, body)
   end
 
-  # so I can test
   def n_way_implementation(one_or_two, caller, call, body) do
     PS.add_function(caller, { one_or_two, call, body })
     nil
   end
 
-  def ok([result: _result, state: _state]) do
-    raise "ok"
-  end
   # @doc """
   # Used at the end of a service function to indicate that
   # the state should be updated, and to provide a return value. The
@@ -47,18 +43,18 @@ defmodule Component.Strategy.Common do
   # With no do: block, returns the new state as the reply value.
   # """
 
-  # defmacro set_state(new_state) do
-  #   quote bind_quoted: [ state: new_state ] do
-  #     { :reply, state, state }
-  #   end
-  # end
+  defmacro set_state_and_return(new_state) do
+    quote bind_quoted: [ state: new_state ] do
+      { :reply, state, state }
+    end
+  end
 
 
-  # defmacro set_state(new_state, do: return) do
-  #   quote do
-  #     { :reply, unquote(return), unquote(new_state) }
-  #   end
-  # end
+  defmacro set_state(new_state, do: return) do
+    quote do
+      { :reply, unquote(return), unquote(new_state) }
+    end
+  end
 
 
   # # The strategy is the module (Anonymous, Named, Pooled)
@@ -68,24 +64,46 @@ defmodule Component.Strategy.Common do
     PS.start_link(caller, opts)
 
     default_state = Keyword.get(opts, :initial_state, :no_state)
-    server_opts = if name do [ name: name ] else [ ] end
+
+    server_opts = if name do
+      quote do
+        [ name: { :via, :global, unquote(name) } ]
+      end
+    else
+       [ ]
+    end
 
     quote do
       #import Kernel,        except: [ def: 2 ]
       #import Jeeves.Common, only:   [ def: 2, set_state: 1, set_state: 2 ]
 
       import Component.Strategy.Common,
-             only: [ ok: 1, one_way: 2, two_way: 2 ]
+             only: [ one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]
 
       @before_compile { unquote(strategy), :generate_code_callback }
+
+      @doc """
+      This is a simple flag function that identifies this module
+      as implementing a component.
+      """
+
+      def unquote(Component.info_function_name())() do
+        %{
+          strategy: unquote(strategy),
+          name:     unquote(name),
+          opts:     unquote(opts),
+        }
+      end
 
       def run() do
         run(unquote(default_state))
       end
 
-      def run(state_override) do
-        state = initial_state(state_override, unquote(default_state))
-        { :ok, pid } = GenServer.start_link(__MODULE__, state, server_opts())
+      def run(state) do
+        IO.puts "running in #{node()}"
+        IO.puts "calling GenServer.start_link(#{inspect __MODULE__}, #{inspect state}, #{inspect unquote(server_opts)})"
+        { :ok, pid } = GenServer.start_link(__MODULE__, state, unquote(server_opts))
+        IO.puts "back from start_link"
         pid
       end
 
@@ -97,15 +115,11 @@ defmodule Component.Strategy.Common do
         { :ok, state }
       end
 
-      def initial_state(override, _default) do
-        override
-      end
+      # def server_opts() do
+      #   unquote(server_opts)
+      # end
 
-      def server_opts() do
-        unquote(server_opts)
-      end
-
-      defoverridable [ initial_state: 2, init: 1 ]
+      # defoverridable [ initial_state: 2, init: 1 ]
     end
     |> maybe_show_generated_code(opts)
   end
@@ -163,8 +177,8 @@ defmodule Component.Strategy.Common do
   end
 
   @doc false
-  def create_genserver_response(response, state) do
-    { :reply, response, state }
+  def create_genserver_response(result, state) do
+    { :reply, result, state }
   end
 
   @doc false

@@ -1,4 +1,4 @@
-defmodule Component.Strategy.Named do
+defmodule Component.Strategy.Global do
 
   @moduledoc """
   Implement a singleton (global) named service.
@@ -113,7 +113,7 @@ defmodule Component.Strategy.Named do
   defp api_body(one_or_two_way, options, call) do
     request = call_signature(call)
     quote do
-      GenServer.unquote(invocation(one_or_two_way))(unquote(service_name(options)), unquote(request))
+      GenServer.unquote(invocation(one_or_two_way))({ :via, :global, unquote(service_name(options)) }, unquote(request))
     end
   end
 
@@ -126,16 +126,29 @@ defmodule Component.Strategy.Named do
     api_call = api_signature(options, call)
     state_var = { state_name(options), [], nil }
 
+    call_or_cast(one_or_two_way, request, state_var, api_call)
+  end
+
+  defp call_or_cast(:one_way, request, state_var, api_call) do
     quote do
-      def unquote(handler(one_or_two_way)) (unquote(request), _, unquote(state_var)) do
-        __MODULE__.Implementation.unquote(api_call)
-        |> Common.create_genserver_response(unquote(state_var))
+      def handle_cast(unquote(request), șțąțɇ) do
+        unquote(state_var) = șțąțɇ
+        new_state = __MODULE__.Implementation.unquote(api_call)
+        { :noreply, new_state }
+        # |> Common.create_genserver_response(unquote(state_var))
       end
     end
   end
 
-  defp handler(:two_way), do: :handle_call
-  defp handler(:one_way), do: :handle_cast
+  defp call_or_cast(:two_way, request, state_var, api_call) do
+    quote do
+      def handle_call(unquote(request), _, șțąțɇ) do
+        unquote(state_var) = șțąțɇ
+        __MODULE__.Implementation.unquote(api_call)
+        |> Common.create_genserver_response(șțąțɇ)
+      end
+    end
+  end
 
   @doc false
   def generate_implementation(options, {_one_or_two_way, call, body}) do

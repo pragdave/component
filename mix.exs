@@ -24,7 +24,7 @@ defmodule Component.MixProject do
 
   defp deps do
     [
-      { :swarm,   "~> 3.3"   },
+#      { :swarm,   "~> 3.3"   },
       { :statix,  ">= 1.0.0" },
     ]
   end
