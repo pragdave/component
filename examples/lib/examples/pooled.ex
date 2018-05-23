@@ -1,8 +1,7 @@
-defmodule Examples.GlobalCounter do
+defmodule Examples.PooledCounter do
 
-  use Component.Strategy.Global,
+  use Component.Strategy.Pooled,
       initial_state: 0,
-      show_code: 1,
       state_name: :tally
 
 
@@ -26,5 +25,4 @@ defmodule Examples.GlobalCounter do
       tally
     end
   end
-
 end

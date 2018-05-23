@@ -100,10 +100,7 @@ defmodule Component.Strategy.Common do
       end
 
       def run(state) do
-        IO.puts "running in #{node()}"
-        IO.puts "calling GenServer.start_link(#{inspect __MODULE__}, #{inspect state}, #{inspect unquote(server_opts)})"
         { :ok, pid } = GenServer.start_link(__MODULE__, state, unquote(server_opts))
-        IO.puts "back from start_link"
         pid
       end
 

@@ -98,7 +98,7 @@ defmodule Component.Strategy.Global do
   end
 
   @doc false
-  defmacro generate_code_callback(_) do
+  defmacro generate_code_callback(_module_env) do
     Common.generate_code(__CALLER__.module, __MODULE__)
   end
 

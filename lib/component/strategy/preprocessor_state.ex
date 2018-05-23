@@ -7,12 +7,13 @@ defmodule Component.Strategy.PreprocessorState do
 
 
   def start_link(name, options) do
-    { :ok, _ } = Agent.start_link(
+    { :ok, pid } = Agent.start_link(
       fn ->
         %__MODULE__{options: options}
       end,
       name: name_for(name)
     )
+    pid
   end
 
 

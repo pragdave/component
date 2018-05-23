@@ -26,6 +26,7 @@ defmodule Component.MixProject do
     [
 #      { :swarm,   "~> 3.3"   },
       { :statix,  ">= 1.0.0" },
+      { :poolboy, ">= 0.0.0" },
     ]
   end
 end
