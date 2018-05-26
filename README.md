@@ -1,9 +1,4 @@
-<p style="float: right; width: 30%; margin-left: 3rem">
-  <img aria-roledescription="logo" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
-  <figcaption style="font-size: 70%; font-weight: bold; text-align: center; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc">
-    Making simple servers simple since 2018
-  </figcaption>
-</p>
+  <img align="right" aria-roledescription="logo" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
 
 
 # Component
