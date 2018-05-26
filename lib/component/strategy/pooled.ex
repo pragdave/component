@@ -31,11 +31,11 @@ defmodule Component.Strategy.Pooled do
 
   * To start the pool:
 
-        Workers.run()
+        Workers.initialize()
 
     or
 
-        Workers.run(initial_state)
+        Workers.initialize(initial_state)
 
   * Claim a worker using
 
@@ -72,7 +72,7 @@ defmodule Component.Strategy.Pooled do
   * `state:` _value_
 
     The default value for the initial state of all workers. Can be overridden
-    (again for all workers) by passing a value to `run()`
+    (again for all workers) by passing a value to `initialize()`
 
   * `state_name:` _atom_
 
@@ -145,11 +145,11 @@ defmodule Component.Strategy.Pooled do
 
       @name unquote(name)
 
-      def run() do
-        run(unquote(default_state))
+      def initialize() do
+        initialize(unquote(default_state))
       end
 
-      def run(state) do
+      def initialize(state) do
         Component.Scheduler.start_new_pool(
           worker_module: __MODULE__.Worker,
           pool_opts:     unquote(opts[:pool] || [ min: 1, max: 4]),
@@ -157,11 +157,11 @@ defmodule Component.Strategy.Pooled do
           state:         state)
       end
 
-      def checkout()  do
+      def create()  do
         Component.Scheduler.checkout(@name)
       end
 
-      def checkin(worker) do
+      def destroy(worker) do
         Component.Scheduler.checkin(@name, worker)
       end
 

@@ -1,10 +1,8 @@
 work in progress warning:
 
-# ☠☠ DON'T EVEN THINK OF USING THIS ☠☠
+#  ☠☠ DON'T EVEN THINK OF USING THIS ☠☠
 
-
-  <img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
-
+<img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
 
 # Component
 
@@ -17,7 +15,7 @@ definitions. This library generates from it an API module, a GenServer module,
 and an implementation module.
 
 The component library is part of the
-[ToyTown](https://github.com/pragdave/toytown) suite.  You can use it
+[Toyland](https://github.com/pragdave/toyland) suite.  You can use it
 standalone, but if you assembly components together using [Noddy](https://github.com/pragdave/noddy)
 you'll automatically get deployment support, statsd/telegraf compatible
 data collection on every request, shared logging, and world peace.
@@ -40,9 +38,11 @@ We support a number of component types:
         state_name:    :word_list,
         initial_state: read_word_list()
 
-    two_way random_word() do
+    two_way random_word() do      # <- this is the externally accessible interface
       word_list |> Enum.random()
     end
+
+    # helper
 
     defp read_word_list() do
       "../assets/words.txt"

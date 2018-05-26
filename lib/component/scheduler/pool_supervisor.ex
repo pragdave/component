@@ -12,7 +12,6 @@ defmodule Component.Scheduler.PoolSupervisor do
   `max`: can add upto `max - min` demand-based workers
   """
   def start_link(opts) do
-    IO.inspect opts, pretty: true
     Supervisor.start_link(__MODULE__, opts)
   end
 
@@ -35,9 +34,6 @@ defmodule Component.Scheduler.PoolSupervisor do
       size:          min,
       max_overflow:  max - min,
     ]
-
-    IO.inspect opts
-    IO.inspect poolboy_config
 
     children = [
       :poolboy.child_spec(name, poolboy_config, state),

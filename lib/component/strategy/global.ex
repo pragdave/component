@@ -22,7 +22,7 @@ defmodule Component.Strategy.Global do
 
   To consume the service:
 
-  * Create an instance of the service with `NamedJeeves.run()`. You can pass
+  * Create an instance of the service with `NamedJeeves.create()`. You can pass
     initial state to the service as an optional parameter. This call returns
     a handle to this service instance, but you shouldn't use it.
 
@@ -42,7 +42,7 @@ defmodule Component.Strategy.Global do
         end
       end
 
-      KV.run(%{ name: "Elixir" })
+      KV.create(%{ name: "Elixir" })
       KV.put(:type, "language")
       KV.get(:name)    # => "Elixir"
       KV.get(:type)    # => "language"
@@ -85,17 +85,80 @@ defmodule Component.Strategy.Global do
 
 
   alias   Component.Strategy.Common
+  alias   Component.Strategy.PreprocessorState, as: PS
   require Common
 
   @doc false
   defmacro __using__(opts \\ []) do
-
-    Common.generate_common_code(
-      __CALLER__.module,
-      __MODULE__,
-      opts,
-      service_name(opts))
+    generate_global_service(__CALLER__.module, opts)
   end
+
+  @doc false
+  def generate_global_service(caller, opts) do
+    name          = Keyword.get(opts, :service_name,  caller)
+    default_state = Keyword.get(opts, :initial_state, :no_state)
+
+    PS.start_link(caller, opts)
+
+    name_opt = quote do: { :via, :global, unquote(name) }
+
+    server_opts = if name do
+        quote do
+          [ name: unquote(name_opt) ]
+        end
+      else
+         [ ]
+      end
+
+    quote do
+
+        import Component.Strategy.Common,
+               only: [ one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]
+
+        @before_compile { unquote(__MODULE__), :generate_code_callback }
+
+        @doc """
+        This is a simple flag function that identifies this module
+        as implementing a component.
+        """
+
+        def unquote(Component.info_function_name())() do
+          %{
+            strategy: unquote(__MODULE__),
+            name:     unquote(name),
+            opts:     unquote(opts),
+          }
+        end
+
+        def create() do
+          create(unquote(default_state))
+        end
+
+        def create(state) do
+          { :ok, pid } = GenServer.start_link(__MODULE__, state, unquote(server_opts))
+          pid
+        end
+
+        def destroy() do
+          GenServer.stop(unquote(name_opt))
+        end
+
+        def start_link(state_override) do
+          { :ok, create(state_override) }
+        end
+
+        def init(state) do
+          { :ok, state }
+        end
+
+        # def server_opts() do
+        #   unquote(server_opts)
+        # end
+
+        # defoverridable [ initial_state: 2, init: 1 ]
+      end
+      |> Common.maybe_show_generated_code(opts)
+    end
 
   @doc false
   defmacro generate_code_callback(_module_env) do

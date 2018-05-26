@@ -24,11 +24,11 @@ defmodule Component.Strategy.Named do
 
   * To start the worker supervisor:
 
-        Workers.run()
+        Workers.initialize()
 
     or
 
-        Workers.run(initial_state)
+        Workers.initialize(initial_state)
 
   * Claim a worker using
 
@@ -65,7 +65,7 @@ defmodule Component.Strategy.Named do
   * `state:` _value_
 
     The default value for the initial state of all workers. Can be overridden
-    (again for all workers) by passing a value to `run()`
+    (again for all workers) by passing a value to `initialize()`
 
   * `state_name:` _atom_
 
@@ -138,7 +138,7 @@ defmodule Component.Strategy.Named do
 
       @name unquote(name)
 
-      def run() do
+      def initialize() do
         Component.NamedSupervisor.run(
           worker_module: __MODULE__.Worker,
           name:          @name)

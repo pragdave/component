@@ -18,7 +18,7 @@ defmodule Component.Strategy.Common do
     n_way_implementation(:two_way, __CALLER__.module, call, body)
   end
 
-  def n_way_implementation(one_or_two, caller, call, body) do
+  defp n_way_implementation(one_or_two, caller, call, body) do
     PS.add_function(caller, { one_or_two, call, body })
     nil
   end
@@ -60,64 +60,7 @@ defmodule Component.Strategy.Common do
   # # The strategy is the module (Anonymous, Named, Pooled)
 
   @doc false
-  def generate_common_code(caller, strategy, opts, name) do
-    PS.start_link(caller, opts)
 
-    default_state = Keyword.get(opts, :initial_state, :no_state)
-
-    server_opts = if name do
-      quote do
-        [ name: { :via, :global, unquote(name) } ]
-      end
-    else
-       [ ]
-    end
-
-    quote do
-
-      import Component.Strategy.Common,
-             only: [ one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]
-
-      @before_compile { unquote(strategy), :generate_code_callback }
-
-      @doc """
-      This is a simple flag function that identifies this module
-      as implementing a component.
-      """
-
-      def unquote(Component.info_function_name())() do
-        %{
-          strategy: unquote(strategy),
-          name:     unquote(name),
-          opts:     unquote(opts),
-        }
-      end
-
-      def run() do
-        run(unquote(default_state))
-      end
-
-      def run(state) do
-        { :ok, pid } = GenServer.start_link(__MODULE__, state, unquote(server_opts))
-        pid
-      end
-
-      def start_link(state_override) do
-        { :ok, run(state_override) }
-      end
-
-      def init(state) do
-        { :ok, state }
-      end
-
-      # def server_opts() do
-      #   unquote(server_opts)
-      # end
-
-      # defoverridable [ initial_state: 2, init: 1 ]
-    end
-    |> maybe_show_generated_code(opts)
-  end
 
   @doc false
   def generate_code(caller, strategy) do
