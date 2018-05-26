@@ -3,7 +3,19 @@
 
 # Component
 
+The _Component Library_ makes it easy to create simple servers. It is an
+attempt to make it so easy to write trivial standalone servers that
+people will just naturally split their applications up that way.
 
+A component is a simple module, containing what look like function
+definitions. This library generates from it an API module, a GenServer module,
+and an implementation module.
+
+The component library is part of the
+[ToyTown](https://github.com/pragdave/toytown) suite.  You can use it
+standalone, but if you assembly components together using [Noddy](https://github.com/pragdave/noddy)
+you'll automatically get deployment support, statsd/telegraf compatible
+data collection on every request, shared logging, and world peace.
 
 ### Component Types
 
