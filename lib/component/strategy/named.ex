@@ -1,15 +1,8 @@
-defmodule Component.Strategy.Pooled do
+defmodule Component.Strategy.Named do
 
   @moduledoc """
-  Implement a singleton (global) named pool of services.
-
-  Creates a dynamic pool of worker services.
-
-
-
-  ### Prerequisites
-
-  You'll need to add poolboy to your project dependencies.
+  Implement a named service. You can create any number of workers
+  based on the service.
 
   ### Usage
 
@@ -25,11 +18,11 @@ defmodule Component.Strategy.Pooled do
 
     For this example, we'll call the module `Workers`.
 
-  * Add the line `use Component.Strategy.Pooled` to the top of this module.
+  * Add the line `use Component.Strategy.Named` to the top of this module.
 
   * Adjust the other options if required.
 
-  * To start the pool:
+  * To start the worker supervisor:
 
         Workers.run()
 
@@ -39,7 +32,7 @@ defmodule Component.Strategy.Pooled do
 
   * Claim a worker using
 
-       worker = Workers.checkout()
+       worker = Workers.create()
 
   * Call functions in the module using
 
@@ -48,14 +41,14 @@ defmodule Component.Strategy.Pooled do
 
   * When you're finished with the worker, call
 
-      Workers.checkin(worker)
+      Workers.destroy(worker)
 
 
 
   ### Example
 
       defmodule FaceDetector do
-        using Jeeves.Pooled,
+        using Jeeves.Named
               state: %{ algorithm: ViolaJones },
               state_name: :options,
               pool:  [ min: 3, max: 10 ]
@@ -122,12 +115,12 @@ defmodule Component.Strategy.Pooled do
 
   @doc false
   defmacro __using__(opts \\ []) do
-    generate_pooled_service(__CALLER__.module, opts)
+    generate_named_service(__CALLER__.module, opts)
   end
 
   @doc false
-  def generate_pooled_service(caller, opts) do
-    name  = Keyword.get(opts, :service_name,  :no_name)
+  def generate_named_service(caller, opts) do
+    name          = Keyword.get(opts, :service_name,  caller)
     default_state = Keyword.get(opts, :initial_state, :no_state)
 
     PS.start_link(caller, opts)
@@ -146,23 +139,21 @@ defmodule Component.Strategy.Pooled do
       @name unquote(name)
 
       def run() do
-        run(unquote(default_state))
-      end
-
-      def run(state) do
-        Component.Scheduler.start_new_pool(
+        Component.NamedSupervisor.run(
           worker_module: __MODULE__.Worker,
-          pool_opts:     unquote(opts[:pool] || [ min: 1, max: 4]),
-          name:          @name,
-          state:         state)
+          name:          @name)
       end
 
-      def checkout()  do
-        Component.Scheduler.checkout(@name)
+      def create(state \\ unquote(default_state))  do
+        spec = {
+          __MODULE__.Worker,
+          state,
+        }
+        Component.NamedSupervisor.create(@name, spec)
       end
 
-      def checkin(worker) do
-        Component.Scheduler.checkin(@name, worker)
+      def destroy(worker) do
+        Component.NamedSupervisor.destroy(@name, worker)
       end
 
     end

@@ -6,15 +6,11 @@ defmodule Examples.Application do
   use Application
 
   def start(_type, _args) do
-    # List all child processes to be supervised
-    children = [
-      # Starts a worker by calling: Examples.Worker.start_link(arg)
-      # {Examples.Worker, arg},
-    ]
+    # children = [
+    # ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Examples.Supervisor]
-    Supervisor.start_link(children, opts)
+    # opts = [strategy: :one_for_one, name: Examples.Supervisor]
+    # Supervisor.start_link(children, opts)
+    { :ok, self() }
   end
 end

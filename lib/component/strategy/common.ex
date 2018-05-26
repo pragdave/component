@@ -74,8 +74,6 @@ defmodule Component.Strategy.Common do
     end
 
     quote do
-      #import Kernel,        except: [ def: 2 ]
-      #import Jeeves.Common, only:   [ def: 2, set_state: 1, set_state: 2 ]
 
       import Component.Strategy.Common,
              only: [ one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]

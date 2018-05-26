@@ -7,13 +7,23 @@ defmodule Component.Strategy.PreprocessorState do
 
 
   def start_link(name, options) do
-    { :ok, pid } = Agent.start_link(
+    agent_name = name_for(name)
+
+    # I don't know what's happening, but compiling under
+    # Visual Studio Code seems to start the agent twice.
+
+    Agent.start_link(
       fn ->
         %__MODULE__{options: options}
       end,
-      name: name_for(name)
+      name: agent_name
     )
-    pid
+    |> case do
+      { :ok, pid } ->
+        pid
+      { :error, { :already_started, pid }} ->
+        pid
+    end
   end
 
 

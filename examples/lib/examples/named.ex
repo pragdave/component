@@ -1,9 +1,9 @@
-defmodule Examples.GlobalCounter do
+defmodule Examples.NamedCounter do
 
-  use Component.Strategy.Global,
+  use Component.Strategy.Named,
       initial_state: 0,
-      show_code: false,
-      state_name: :tally
+      state_name: :tally,
+      show_code:  1
 
 
   one_way increment(n) do
@@ -26,5 +26,4 @@ defmodule Examples.GlobalCounter do
       tally
     end
   end
-
 end
