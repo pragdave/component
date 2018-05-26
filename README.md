@@ -1,4 +1,4 @@
-  <img align="right" aria-roledescription="logo" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
+  <img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
 
 
 # Component
