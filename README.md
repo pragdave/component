@@ -266,8 +266,8 @@ end
 
 ### State
 
-With the exception of libraries, all component types run one or more
-worker processes, and those workers maintain state.
+With the exception of hungry consumers, all component types run one or
+more worker processes, and those workers maintain state.
 
 The Component library handles state a little differently (some would say
 controversially). Rather than declare the state as a parameter in all
@@ -338,9 +338,6 @@ as `Counter.create(99)`, that value will be used to set the state.
 
 ### Component Lifecycle
 
-Library components have no lifecycle—you simply call the functions they
-contain.
-
 A global component must be created before use. Once created, it may be
 accessed by simply calling the functions it contains. There is no need
 to identify a particular worker, as there is only one per component. A
@@ -359,9 +356,12 @@ component. You should eventually destroy workers that you create.
 Pooled components are automatically created when needed, so there's no
 need to call their `create` function.
 
-| Type    | Initialize | Create/destroy | Call |
-|---------|:----------:|:--------------:|:----:|
-| Library |     —      |      —         |  ✔  |
-| Global  |     —      |       ✔        |  ✔  |
-| Named   |     ✔      |       ✔        |  ✔  |
-| Pooled  |     ✔      |       —        |  ✔  |
+| Type    | Initialize | Create/destroy |      Call      |
+|---------|:----------:|:--------------:|:--------------:|
+| Global  |     —      |       ✔        |       ✔       |
+| Named   |     ✔      |       ✔        |       ✔       |
+| Pooled  |     ✔      |       —        |       ✔       |
+| Hungry  |     ✔      |       —        |  `consume()`  |
+
+Hungry components have no state, and do not need to be created or
+destroyed—this is handled automatically.
