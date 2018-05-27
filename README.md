@@ -24,6 +24,13 @@ data collection on every request, shared logging, and world peace.
 
 We support a number of component types:
 
+* [global](#global-components): a singleton process
+* [named](#named-components): on-demand processes
+* [pooled](#pooled-components): a pool of processes that typically
+  represent limited resources
+* [hungry](#hungry-components): a pool of processes that process a
+  collection in parallel
+
 #### Global Components
 
 A _global_ component runs as a singleton process, accessed by name. All
