@@ -7,7 +7,7 @@ defmodule Component.Strategy.Hungry do
   end
 
   defp generate_hungry_service(caller, opts) do
-    default_worker_count = opts[:default_worker_count] || System.schedulers_online()
+    default_concurrency = opts[:default_concurrency] || System.schedulers_online()
     name = opts[:name] || caller
 
     quote do
@@ -16,9 +16,17 @@ defmodule Component.Strategy.Hungry do
         Task.Supervisor.start_link(name: unquote(name))
       end
 
-      def consume(feed, concurrency \\ unquote(default_worker_count)) do
-        Task.async_stream(feed, &process/1, max_concurrency: concurrency)
-        |> Enum.map(fn { :ok, val } -> val end)
+      def consume(feed, options \\ []) do
+        concurrency = options[:concurrency] \\ unquote(default_concurrency)
+        result = Task.async_stream(feed, &process/1, max_concurrency: concurrency)
+                 |> Enum.map(fn { :ok, val } -> val end)
+
+        case options[:into] do
+          nil ->
+            result
+          collectable ->
+            result |> Enum.into(collectable)
+        end
       end
     end
     |> Common.maybe_show_generated_code(opts)

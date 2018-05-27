@@ -158,6 +158,69 @@ though.
 
 #### Hungry Components
 
+A hungry component defines a way to process a collection, where the
+processing of items in the collection is automatically parallelized.
+
+  ~~~ elixir
+  defmodule FaceRecognizer do
+
+    use Component.Strategy.Hungry
+
+    def process(%JPeg{ image: image }) do
+      image |> jpeg_to_bitmap |> Vision.recognize_face()
+    end
+
+    def process(%PNG{ image: image }) do
+      image |> png_to_bitmap |> Vision.recognize_face()
+    end
+
+  end
+  ~~~
+
+  Unlike the other components, you define the action to be taken on a
+  member of the collection by writing a function called `process`. This
+  can use pattern matching and guard clauses to vary the behaviour
+  depending on the vale passed in.
+
+  You invoke the hungry component using
+
+  ~~~ elixir
+  people = FaceRecognizer.consume(collection_of_images)
+  ~~~
+
+  By default, the results are returned as a list, where each entry is
+  the value of appling the processing to the corresponding value in the
+  input collection. You can override this by providing an `into:` parameter.
+
+  ~~~ elixir
+  contacts = ContactCollection.new
+  people = FaceRecognizer.consume(collection_of_images, into: contacts)
+  ~~~
+
+  A hungry consumer will normally run a worker process for each of the
+  process schedulers available on the current node (which is normally
+  the number of available CPUs). You can override this globally for a
+  particular consumer with the `default_concurrency` option:
+
+
+  ~~~ elixir
+  defmodule FaceRecognizer do
+
+    use Component.Strategy.Hungry,
+        default_concurrency: 10
+
+    . . .
+  ~~~
+
+  You can also override it on a particular call to `consume` using the
+  `concurrency:` option.
+
+  ~~~ elixir
+  people = FaceRecognizer.consume(collection_of_images, concurrency: 5)
+  ~~~
+
+
+
 
 ### One and Two Way Functions
 
