@@ -24,12 +24,15 @@ data collection on every request, shared logging, and world peace.
 
 We support a number of component types:
 
-* _Library_ components have no state: they are simply a module containing functions. They are included for consistency.
+#### Global Components
 
-* A _global_ component runs as a singleton process, accessed by name. All calls to it are resolved to this single process, and the state is
-  persisted across calls. A logging facility might be implemented as a global component.
+A _global_ component runs as a singleton process, accessed by name. All
+calls to it are resolved to this single process, and the state is
+persisted across calls. A logging facility might be implemented as a
+global component.
 
-  Here's a global component that stores a list of words in its state, exporting a function that returns a random word.
+Here's a global component that stores a list of words in its state,
+exporting a function that returns a random word.
 
   ~~~ elixir
   defmodule Dictionary do
@@ -53,26 +56,28 @@ We support a number of component types:
   end
   ~~~
 
-  To get it running, you call
+To get it running, you call
 
   ~~~ elixir
   Dictionary.create()
   ~~~
 
-  Then, anywhere in the application, you can get a random word using
+Then, anywhere in the application, you can get a random word using
 
   ~~~ elixir
   word = Dictionary.random_word()
   ~~~
 
-* A _named_ component is a factory that creates worker processes on
-  demand. The workers run the code declared in the component's module.
-  Each worker maintains its own state. When you're done with a worker,
-  you destroy it. You could create named components when someone first
-  connects to your web app, and use it to maintain that person's state
-  for the lifetime of their session.
+#### Named Components
 
-  Here's a named component that implements a set of counters:
+A _named_ component is a factory that creates worker processes on
+demand. The workers run the code declared in the component's module.
+Each worker maintains its own state. When you're done with a worker, you
+destroy it. You could create named components when someone first
+connects to your web app, and use it to maintain that person's state for
+the lifetime of their session.
+
+Here's a named component that implements a set of counters:
 
   ~~~ elixir
   defmodule Counter do
@@ -91,15 +96,15 @@ We support a number of component types:
   end
   ~~~
 
-  Because the named component has multiple workers, you must first
-  initialize the overall component. This is a one-time thing:
+Because the named component has multiple workers, you must first
+initialize the overall component. This is a one-time thing:
 
   ~~~ elixir
   Counter.initialize()
   ~~~
 
-  Whenever you need a new counter, you first create it. You then call
-  its functions:
+Whenever you need a new counter, you first create it. You then call
+its functions:
 
   ~~~ elixir
   acc1 = Counter.create
@@ -111,13 +116,15 @@ We support a number of component types:
   ~~~
 
 
-* A _pooled_ component represents a pool of worker processes. When you
-  call a pooled worker, it handles your request using its existing
-  state, and any updates to that state are retained: the worker is a
-  resource that is shared on a call-by-call basis. Workers may be
-  automatically created and destroyed as demand dictates. You might use
-  pooled workers to manage access to limited resources (database
-  connections are a common example).
+#### Pooled Components
+
+A _pooled_ component represents a pool of worker processes. When you
+call a pooled worker, it handles your request using its existing state,
+and any updates to that state are retained: the worker is a resource
+that is shared on a call-by-call basis. Workers may be automatically
+created and destroyed as demand dictates. You might use pooled workers
+to manage access to limited resources (database connections are a common
+example).
 
   ~~~ elixir
   defmodule StockQuoteConnection do
@@ -132,15 +139,18 @@ We support a number of component types:
   end
   ~~~
 
-  Pooled resources are always called transactionally, so there's no need
-  to create a worker. You still have to initialize the component,
-  though.
+Pooled resources are always called transactionally, so there's no need
+to create a worker. You still have to initialize the component,
+though.
 
   ~~~ elixir
   StockQuoteConnection.initialize()
 
   values = pmap(symbols, &StockQuoteConnection.get_quote(&1))
   ~~~
+
+#### Hungry Components
+
 
 ### One and Two Way Functions
 
