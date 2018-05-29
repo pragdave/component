@@ -1,8 +1,8 @@
 defmodule Examples.HungryAdder do
 
   use Component.Strategy.Hungry,
-      show_code:            false,
-      default_worker_count: 5
+      show_code:           false,
+      default_concurrency: 5
 
   def process(val) when is_number(val) do
     val * 3

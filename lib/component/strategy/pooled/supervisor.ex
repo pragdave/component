@@ -1,4 +1,4 @@
-defmodule Component.Scheduler.PoolSupervisor do
+defmodule Component.Strategy.Pooled.Supervisor do
 
   use Supervisor
 

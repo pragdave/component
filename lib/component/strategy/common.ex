@@ -2,18 +2,65 @@ defmodule Component.Strategy.Common do
 
   alias Component.Strategy.PreprocessorState, as: PS
 
-
+  @moduledoc false
 
   @doc """
-  We replace the regular def with something that records the definition in
-  a list. No code is emitted here—that happens in the before_compile hook
+  Defines a worker function that simply updates the state. It will
+  be run asynchronously (using `GenServer.cast`).
+
+  The return value of the function becomes the new state.
+
+  ~~~ elixir
+  defmodule Dictionary do
+    use Component.Strategy.Global,
+        state_name: :dictionary,
+        initial_state: %{}
+
+    one_way add_key_value(key, value) do
+      dictionary |> Map.put(key, value)
+    end
+  end
+  ~~~
   """
 
   defmacro one_way(call, body) do
     n_way_implementation(:one_way, __CALLER__.module, call, body)
   end
 
+  @doc """
+  Defines a worker function that returns a value and potentially updates
+  state.
 
+  To simply return a value and leave the state unchanged, just have
+  the function return that value:
+
+  ~~~ elixir
+  two_way get_state() do
+    state
+  end
+  ~~~
+
+  To set the state and return that state as a value, use
+  `set_state_and_return`:
+
+  ~~~ elixir
+  two_way increment() do
+    set_state_and_return(count + 1)
+  end
+  ~~~
+
+  To set the state to one value and return another, use `set_state`
+  passing it the new state as the first parameter and a block that
+  determines the return value as the second:
+
+  ~~~ elixir
+  two_way get_count_then_increment() do
+    set_state(count + 1) do     # this is the new state
+      count                     # this will be the original value
+    end
+  end
+
+  """
   defmacro two_way(call, body) do
     n_way_implementation(:two_way, __CALLER__.module, call, body)
   end
@@ -23,31 +70,39 @@ defmodule Component.Strategy.Common do
     nil
   end
 
-  # @doc """
-  # Used at the end of a service function to indicate that
-  # the state should be updated, and to provide a return value. The
-  # new state is passed as a parameter, and a `do` block is
-  # evaluated to provide the return value.
+  @doc """
+  Used at the end of a service function to indicate that
+  the state should be updated and this new state value should also be
+  returned as the value of the funcrtion.
 
-  # If not called in a service function, then the return value of the
-  # function will be the value returned to the client, and the state
-  # will not be updated.
-
-  #     def put(store, key, value) do
-  #       set_state(Map.put(store, key, value)) do
-  #         value
-  #       end
-  #     end
+  def increment(value) do
+    set_state_and_return(count + value)
+  end
 
 
-  # With no do: block, returns the new state as the reply value.
-  # """
+  With no do: block, returns the new state as the reply value.
+  """
 
   defmacro set_state_and_return(new_state) do
     quote bind_quoted: [ state: new_state ] do
       { :reply, state, state }
     end
   end
+
+  @doc """
+  Used at the end of a service function to indicate that
+  the state should be updated, and to provide a return value. The
+  new state is passed as a parameter, and a `do` block is
+  evaluated to provide the return value.
+
+  ~~~ elixir
+  def put(key, value) do
+    set_state(Map.put(dictionary, key, value)) do
+      value
+    end
+  end
+  ~~~
+  """
 
 
   defmacro set_state(new_state, do: return) do

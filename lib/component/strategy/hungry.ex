@@ -1,5 +1,55 @@
 defmodule Component.Strategy.Hungry do
 
+  @moduledoc """
+  Implement a _hungry-consumer_ style worker.
+
+  We feed the component a collection, and it maps it to another
+  collection by passing each element through the `process` function.
+  This processing occurs in parallel, up to a maximum concurrency you
+  control. It is an efficient use of resources, as the scheduling is
+  done automatically when each process finishes-there is no
+  preallocation of elements to processes.
+
+  ### Options
+
+  The `using Component.Strategy.Hungry` call takes the following
+  options:
+
+  * `name:`
+    The name to give the component. Defaults to the module name.
+
+  * `default_concurrency:`
+    The number of worker processes to start. Defaults to the number of
+    active schedulers on the node running the component.
+
+  * `show_code:`
+    Dumps the generated code to STDOUT if truthy.
+
+  ### Example
+
+  ~~~ elixir
+  defmodule HungryAdder do
+
+    use Component.Strategy.Hungry,
+        default_concurrency: 5
+
+    def process(val) when is_number(val) do
+      val * 3
+    end
+
+    def process(val) when is_binary(val) do
+      val <> val
+    end
+
+    def process({a, b}), do: { b, a }
+  end
+
+  HungryAdderinitialize()
+  HungryAdderconsume([1,2,"cat"])   # ->  [ 3, 6, "catcat" ]
+  HungryAdderconsume(a: :b, c: :d)  #     [ b: :a, d: :c ]
+  HungryAdderconsume(1..100)        #     [ 3, 6, 9, ... ]
+  ~~~
+  """
   alias Component.Strategy.Common
 
   defmacro __using__(opts \\ []) do
@@ -17,7 +67,7 @@ defmodule Component.Strategy.Hungry do
       end
 
       def consume(feed, options \\ []) do
-        concurrency = options[:concurrency] \\ unquote(default_concurrency)
+        concurrency = options[:concurrency] || unquote(default_concurrency)
         result = Task.async_stream(feed, &process/1, max_concurrency: concurrency)
                  |> Enum.map(fn { :ok, val } -> val end)
 

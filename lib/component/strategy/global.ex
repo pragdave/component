@@ -8,23 +8,24 @@ defmodule Component.Strategy.Global do
   To create the service:
 
   * Create a module that implements the API you want. This API will be
-    expressed as a set of public functions. Each function will automatically
-    receive the current state in a variable (by default named `state`). There is
-    not need to declare this as a
-     parameter.[<small><small>[why?]</small></small>](background.html#why-magic-state).
-    If a function wants to change the state, it must end with a call to the
-    `Jeeves.Common.update_state/2` function (which will have been
-    imported into your module automatically).
+    expressed as a set of public functions. Each function will
+    automatically receive the current state in a variable (by default
+    named `state`). There is not need to declare this as a parameter.
+    ([see why](background.html#why-magic-state)) If a function wants to
+    change the state, it must end with a call to the `set_state/2` or
+    `set_state_and_return` function (which will have been imported into
+    your module automatically).
 
-    For this example, we'll call the module `NamedService`.
+    For this example, we'll call the module `GlobalService`.
 
-  * Add the line `use Jeeves.Named` to the top of this module.
+  * Add the line `use Common.Strategy.Global` to the top of this module.
 
   To consume the service:
 
-  * Create an instance of the service with `NamedJeeves.create()`. You can pass
-    initial state to the service as an optional parameter. This call returns
-    a handle to this service instance, but you shouldn't use it.
+  * Create an instance of the service with `GlobalService.create()`. You
+    can pass initial state to the service as an optional parameter. This
+    call returns a handle to this service instance, but you shouldn't
+    use it.
 
   * Call the API functions in the service.
 
@@ -32,11 +33,11 @@ defmodule Component.Strategy.Global do
   ### Example
 
       defmodule KV do
-        using Jeeves.Named, state: %{}
+        using Common.Strategy.Global, initial_state: %{}
 
         def get(name), do: state[name]
         def put(name, value) do
-          update_state(Map.put(state, name, value)) do
+          set_state(Map.put(state, name, value)) do
             value
           end
         end
@@ -50,22 +51,24 @@ defmodule Component.Strategy.Global do
 
   ### Options
 
-  You can pass a keyword list to `use Jeeves.Anonymous:`
+  You can pass a keyword list to `use Component.Strategy.Global`:
 
-  * `state:` _value_
+  * `initial_state:` _value_
 
   * `state_name:` _atom_
 
-    The default name for the state variable is (unimaginatively)  `state`.
-    Use `state_name` to override this. For example, you could change the
-    previous example to use `store` for the state with:
+    The default name for the state variable is (unimaginatively)
+    `state`. Use `state_name` to override this. For example, you could
+    change the previous example to use `store` for the state with:
 
         defmodule KV do
-          using Jeeves.Named, state: %{}, state_name: :store
+          using Component.Strategy.Global,
+                initial_state: %{},
+                state_name:    :store
 
           def get(name), do: store[name]
           def put(name, value) do
-            update_state(Map.put(store, name, value)) do
+            set_state(Map.put(store, name, value)) do
               value
             end
           end
@@ -73,13 +76,13 @@ defmodule Component.Strategy.Global do
 
   * `service_name:` _atom_
 
-    The default name for the service is the name of the module that defines it.
-    Use `service_name:` to change this.
+    The default name for the service is the name of the module that
+    defines it. Use `service_name:` to change this.
 
-  * `showcode:` _boolean_
+  * `show_code:` _boolean_
 
-    If truthy, dump a representation of the generated code to STDOUT during
-    compilation.
+    If truthy, dump a representation of the generated code to STDOUT
+    during compilation.
 
   """
 

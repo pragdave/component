@@ -1,4 +1,4 @@
-defmodule Component.Scheduler do
+defmodule Component.Strategy.Pooled.Scheduler do
 
   @moduledoc """
 
@@ -11,7 +11,7 @@ defmodule Component.Scheduler do
 
 
     defdelegate start_new_pool(args),
-      to: Component.Scheduler.PoolSupervisor,
+      to: Component.Strategy.Pooled.Supervisor,
       as: :start_link
 
 

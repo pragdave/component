@@ -1,24 +1,26 @@
 defmodule Component.Strategy.Named do
 
   @moduledoc """
-  Implement a named service. You can create any number of workers
-  based on the service.
+  Implement a named service. You can create any number of workers based
+  on the service.
 
   ### Usage
 
   To create the service:
 
   * Create a module that implements the API you want. This API will be
-    expressed as a set of public functions. Each function will automatically
-    receive the current state in a variable (by default named `state`). There is
-    not need to declare this as a parameter.[<small>why?</small>](#why-magic-state).
-    If a function wants to change the state, it must end with a call to the
-    `set_state/2` function (which will have been
-    imported into your module automatically).
+    expressed as a set of public functions. Each function will
+    automatically receive the current state in a variable (by default
+    named `state`). There is not need to declare this as a
+    parameter.[<small>why?</small>](#why-magic-state). If a function
+    wants to change the state, it must end with a call to the
+    `set_state/2` function (which will have been imported into your
+    module automatically).
 
     For this example, we'll call the module `Workers`.
 
-  * Add the line `use Component.Strategy.Named` to the top of this module.
+  * Add the line `use Component.Strategy.Named` to the top of this
+    module.
 
   * Adjust the other options if required.
 
@@ -62,22 +64,24 @@ defmodule Component.Strategy.Named do
 
   You can pass a keyword list to `use Jeeves.Anonymous:`
 
-  * `state:` _value_
+  * `initial_state:` _value_
 
-    The default value for the initial state of all workers. Can be overridden
-    (again for all workers) by passing a value to `initialize()`
+    The default value for the initial state of all workers. Can be
+    overridden (again for all workers) by passing a value to
+    `initialize()`
 
   * `state_name:` _atom_
 
-    The default name for the state variable is (unimaginatively)  `state`.
-    Use `state_name` to override this. For example, the previous
-    example named the state `options`, and inside the `recognize` function
-    your could write `options.algorithm` to look up the algorithm to use.
+    The default name for the state variable is (unimaginatively)
+    `state`. Use `state_name` to override this. For example, the
+    previous example named the state `options`, and inside the
+    `recognize` function your could write `options.algorithm` to look up
+    the algorithm to use.
 
   * `name:` _atom_
 
-    The default name for the pool is the name of the module that defines it.
-    Use `name:` to change this.
+    The default name for the pool is the name of the module that defines
+    it. Use `name:` to change this.
 
   * `pool: [ ` _options_ ` ]`
 
@@ -85,27 +89,29 @@ defmodule Component.Strategy.Named do
 
     * `min: n`
 
-      The minimum number of workers that should be active, and by extension
-      the number of workers started when the pool is run. Default is 2.
+      The minimum number of workers that should be active, and by
+      extension the number of workers started when the pool is run.
+      Default is 2.
 
     * `max: n`
 
-      The maximum number of workers. If all workers are busy and a new request
-      arrives, a new worker will be started to handle it if the current worker
-      count is less than `max`. Excess idle workers will be quietly killed off
-      in the background. Default value is `(min+1)*2`.
+      The maximum number of workers. If all workers are busy and a new
+      request arrives, a new worker will be started to handle it if the
+      current worker count is less than `max`. Excess idle workers will
+      be quietly killed off in the background. Default value is
+      `(min+1)*2`.
 
   * `showcode:` _boolean_
 
-    If truthy, dump a representation of the generated code to STDOUT during
-    compilation.
+    If truthy, dump a representation of the generated code to STDOUT
+    during compilation.
 
   * `timeout:` integer or float
 
-    Specify the timeout to be used when the client calls workers in the pool.
-    If all workers are busy, and none becomes free in that time, an OTP
-    exception is raised. An integer specifies the timeout in milliseconds, and
-    a float in seconds (so 1.5 is the same as 1500).
+    Specify the timeout to be used when the client calls workers in the
+    pool. If all workers are busy, and none becomes free in that time,
+    an OTP exception is raised. An integer specifies the timeout in
+    milliseconds, and a float in seconds (so 1.5 is the same as 1500).
 
   """
 
@@ -139,7 +145,7 @@ defmodule Component.Strategy.Named do
       @name unquote(name)
 
       def initialize() do
-        Component.NamedSupervisor.run(
+        Component.Strategy.Named.Supervisor.run(
           worker_module: __MODULE__.Worker,
           name:          @name)
       end
@@ -149,11 +155,11 @@ defmodule Component.Strategy.Named do
           __MODULE__.Worker,
           state,
         }
-        Component.NamedSupervisor.create(@name, spec)
+        Component.Strategy.Named.Supervisor.create(@name, spec)
       end
 
       def destroy(worker) do
-        Component.NamedSupervisor.destroy(@name, worker)
+        Component.Strategy.Named.Supervisor.destroy(@name, worker)
       end
 
     end
@@ -234,7 +240,7 @@ defmodule Component.Strategy.Named do
   defdelegate generate_implementation(options,function), to: Global
 
   @doc false
-  def generate_delegator(options, {one_or_two_way, call, _body}) do
+  def generate_delegator(options, {_one_or_two_way, call, _body}) do
     quote do
       def unquote(call), do: unquote(delegate_body(options, call))
     end

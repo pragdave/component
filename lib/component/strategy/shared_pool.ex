@@ -1,4 +1,4 @@
-defmodule Component.Strategy.SharedPool do
+false && defmodule Component.Strategy.SharedPool do
 
   @moduledoc """
   Implement a singleton (global) named pool of services.
