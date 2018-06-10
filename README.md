@@ -180,7 +180,7 @@ processing of items in the collection is automatically parallelized.
   Unlike the other components, you define the action to be taken on a
   member of the collection by writing a function called `process`. This
   can use pattern matching and guard clauses to vary the behaviour
-  depending on the vale passed in.
+  depending on the value passed in.
 
   You invoke the hungry component using
 
@@ -356,12 +356,12 @@ component. You should eventually destroy workers that you create.
 Pooled components are automatically created when needed, so there's no
 need to call their `create` function.
 
+Hungry components have no state, and do not need to be created or
+destroyed—this is handled automatically.
+
 | Type    | Initialize | Create/destroy |      Call      |
 |---------|:----------:|:--------------:|:--------------:|
 | Global  |     —      |       ✔        |       ✔       |
 | Named   |     ✔      |       ✔        |       ✔       |
 | Pooled  |     ✔      |       —        |       ✔       |
 | Hungry  |     ✔      |       —        |  `consume()`  |
-
-Hungry components have no state, and do not need to be created or
-destroyed—this is handled automatically.
