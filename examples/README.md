@@ -1,21 +1,12 @@
-# Examples
+# Examples of Components in Use
 
-**TODO: Add description**
+The `lib/` directoy contains examples of each type of component. Each
+sample contains two modules. The first is the sample component itself,
+and the second is a set of unit tests that illustrate how that component
+is used.
 
-## Installation
+To run the components and their tests, just do
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `examples` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:examples, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/examples](https://hexdocs.pm/examples).
-
+~~~
+$ mix do clean, compile
+~~~

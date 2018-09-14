@@ -114,8 +114,6 @@ defmodule Component.Strategy.Common do
 
   # # The strategy is the module (Anonymous, Named, Pooled)
 
-  @doc false
-
 
   @doc false
   def generate_code(caller, strategy) do
