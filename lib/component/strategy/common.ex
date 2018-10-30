@@ -170,8 +170,8 @@ defmodule Component.Strategy.Common do
         use Application
         def start(_type, _args) do
           children = [ %{
-            id:     __MODULE__,
-            start: { __MODULE__, :create, [] }
+            id:     __MODULE__.Id,
+            start: { __MODULE__, :wrapped_create, [] }
            }]
           opts = [strategy: :one_for_one, name: __MODULE__.Supervisor]
           IO.inspect Supervisor.start_link(children, opts)

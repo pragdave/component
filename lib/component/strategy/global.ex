@@ -142,6 +142,12 @@ defmodule Component.Strategy.Global do
           pid
         end
 
+        # the normal api removes the :ok, but we need it when starting
+        # under a supervisor
+        def wrapped_create() do
+          { :ok, create() }
+        end
+
         def destroy() do
           GenServer.stop(unquote(name_opt))
         end
