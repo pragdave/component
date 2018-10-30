@@ -123,10 +123,11 @@ defmodule Component.Strategy.Common do
 
     PS.stop(caller)
 
+    application = maybe_create_application(options)
     quote do
       use GenServer
 
-      maybe_generate_application(options)
+      unquote(application)
 
       unquote_splicing(apis)
       unquote_splicing(handlers)
