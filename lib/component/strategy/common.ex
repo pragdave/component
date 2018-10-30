@@ -174,7 +174,7 @@ defmodule Component.Strategy.Common do
             start: { __MODULE__, :create, [] }
            }]
           opts = [strategy: :one_for_one, name: __MODULE__.Supervisor]
-          Supervisor.start_link(children, opts)
+          IO.inspect Supervisor.start_link(children, opts)
         end
       end
     else
