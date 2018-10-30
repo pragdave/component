@@ -365,3 +365,19 @@ need to call their `create` function.
 
 Hungry components have no state, and do not need to be created or
 destroyed—this is handled automatically.
+
+## Components as Top-Level Applications
+
+Part of the impetus for creating this was to encourage folks to write
+single-responsibility components, one per mix project. To make this even
+easier, if you have a single component in a mix project, you no longer
+need an `application.ex`. Instead
+
+1. Add the option `top_level: true` to your component definition, and
+
+2. Point the `mod` option in your `mix.exs` directly at your component's
+   module.
+
+Here's a runnable example that implements a simple event counter:
+
+### MISSING: event counter
