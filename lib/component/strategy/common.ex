@@ -126,6 +126,8 @@ defmodule Component.Strategy.Common do
     quote do
       use GenServer
 
+      maybe_generate_application(options)
+
       unquote_splicing(apis)
       unquote_splicing(handlers)
       defmodule Implementation do
@@ -161,6 +163,20 @@ defmodule Component.Strategy.Common do
     }
   end
 
+  def maybe_create_application(options) do
+    if options[:top_level] do
+      quote do
+        use Application
+        def start(_type, _args) do
+          children = [ __MODULE__ ]
+          opts = [strategy: :one_for_one, name: __MODULE__.Supervisor]
+          Supervisor.start_link(children, opts)
+        end
+      end
+    else
+      nil
+    end
+  end
 
   @doc !"public only for testing"
   def create_genserver_response(response = {:reply, _, _}, _state) do

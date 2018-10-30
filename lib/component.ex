@@ -6,7 +6,7 @@ defmodule Component do
   and also to return metadata about that component.
   """
   def info_function_name do
-    :"oɟuı_ʇuǝuodɯoɔ"
+    :oɟuı_ʇuǝuodɯoɔ
   end
 
 end
