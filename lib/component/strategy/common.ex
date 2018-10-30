@@ -169,7 +169,10 @@ defmodule Component.Strategy.Common do
       quote do
         use Application
         def start(_type, _args) do
-          children = [ __MODULE__ ]
+          children = [ %{
+            id:     __MODULE__,
+            start: { __MODULE__, :create, [] }
+           }]
           opts = [strategy: :one_for_one, name: __MODULE__.Supervisor]
           Supervisor.start_link(children, opts)
         end
