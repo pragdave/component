@@ -118,6 +118,7 @@ defmodule Component.Strategy.Named do
 
   alias Component.Strategy.PreprocessorState, as: PS
   alias Component.Strategy.{Common, Global}
+  alias Common.CommonAttribute, as: CA
 
   @doc false
   defmacro __using__(opts \\ []) do
@@ -140,6 +141,7 @@ defmodule Component.Strategy.Named do
                 set_state:            2
               ]
 
+
       @before_compile { unquote(__MODULE__), :generate_code }
 
       @name unquote(name)
@@ -150,10 +152,10 @@ defmodule Component.Strategy.Named do
           name:          @name)
       end
 
-      def create(state \\ unquote(default_state))  do
+      def create(override_state \\ CA.no_overrides)  do
         spec = {
           __MODULE__.Worker,
-          state,
+          Common.derive_state(override_state, unquote(default_state)),
         }
         Component.Strategy.Named.Supervisor.create(@name, spec)
       end
@@ -255,5 +257,6 @@ defmodule Component.Strategy.Named do
       Component.Scheduler.run(@name, unquote(request), unquote(timeout))
     end
   end
+
 
 end

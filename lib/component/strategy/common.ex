@@ -205,4 +205,51 @@ defmodule Component.Strategy.Common do
     end
     code
   end
+
+  @doc """
+  The create call accepts an optional state. A component can also have a
+  default state.
+
+  The component's default state can be a value or a function.
+
+  There are 4 possibilities
+
+  | default | override  | value used as initial state
+  |---------|-----------|-------
+  | val     |  none     | val
+  | func    |  none     | func(nil)
+  | val     |  override | override
+  | func    |  override | func(override)
+
+  """
+
+  defmodule CommonAttribute do
+    def no_overrides do
+      :__flag_to_say_no_state_was_passed_to_create__
+    end
+  end
+
+  @no_overrides CommonAttribute.no_overrides
+
+  def derive_state(@no_overrides, default_state)
+  when is_function(default_state)
+  do
+    default_state.(nil)
+  end
+
+  def derive_state(overrides, default_state)
+  when is_function(default_state)
+  do
+    default_state.(overrides)
+  end
+
+  def derive_state(@no_overrides, default_state) do
+    default_state
+  end
+
+  def derive_state(overrides, _default_state) do
+    overrides
+  end
+
+
 end

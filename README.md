@@ -298,13 +298,40 @@ end
 
 #### Initial State
 
-There are two ways to set the initial state of a worker. The first is
-shown in the previous example:
+The initial state of a component is set by a combination of things.
+
+First, when you write a component, you can specify an initial state as
+an option. For example, the following code sets the initial state of the
+component to the result of reading the word list:
 
 ~~~ elixir
 use Component.Strategy.Global,
    state_name:    :word_list,
    initial_state: read_word_list()     # <- run this each time a worker is created
+~~~
+
+You can override this initial state when you create a component by
+passing a value to `create()`.
+
+Second, you can specify the default initial state using a function or
+arity one.
+
+When you call `create` for such a component, the override value you give
+will be passed to this function, and the function's value becomes the
+initial state. If you don't pass an override to create, the function
+will receive `nil`.
+
+The following component has a two element map as a state. The
+`initial_state` function allows these elements to be individually
+overwritten by create:
+
+~~~ elixir
+use Component.Strategy.Named,
+    initial_state: fn overrides ->
+      Map.merge(
+        %{ one: :default_one, two: :default_two },
+        overrides || %{})
+      end
 ~~~
 
 The code associated with the `initial_state` option is invoked to set
