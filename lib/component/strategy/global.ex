@@ -223,9 +223,16 @@ defmodule Component.Strategy.Global do
   end
 
   @doc false
-  def generate_implementation(options, {_one_or_two_way, call, body}) do
+  def generate_implementation(options, {_one_or_two_way, call, do: body}) do
+
+
+    fix_warning = quote do
+      _ = var!(unquote({ state_name(options), [], Elixir }))
+      unquote(body)
+    end
+
     quote do
-      def(unquote(api_signature(options, call)), unquote(body))
+      def(unquote(api_signature(options, call)), do: unquote(fix_warning))
     end
   end
 
