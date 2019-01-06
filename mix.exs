@@ -36,6 +36,7 @@ defmodule Component.MixProject do
     [
       { :statix,  ">= 1.0.0" },
       { :poolboy, ">= 0.0.0" },
+      { :ex_doc,  ">= 0.0.0", only: :dev },
     ]
   end
 
