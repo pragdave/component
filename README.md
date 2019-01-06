@@ -1,6 +1,6 @@
 
 
-<img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
+<img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/logo-large.png"/>
 
 # Component
 

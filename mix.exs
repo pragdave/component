@@ -18,7 +18,21 @@ defmodule Component.MixProject do
       description: @moduledoc,
       package:     package(),
       start_permanent: Mix.env() == :prod,
-    ]
+    ] ++ docs()
+    end
+
+    defp docs do
+      [
+        name:         "Component",
+        source_url:   "https://github.com/pragdave.component",
+        homepage_url: "https://github.com/pragdave.component",
+        docs: [
+          main:   "readme",
+          logo:   "assets/color_puzzle_background_531533.png",
+          extras: [ "README.md" ],
+          assets: "assets",
+        ]
+      ]
   end
 
   def application do
@@ -45,7 +59,8 @@ defmodule Component.MixProject do
       files: [
         "lib",
         "mix.exs",
-        "README.md"
+        "README.md",
+        "assets/logo-large.png"
       ],
       contributors: [
         "Dave Thomas <dave@pragdave.me>",

@@ -18,32 +18,41 @@ defmodule Component.Strategy.Dynamic do
 
     For this example, we'll call the module `Workers`.
 
-  * Add the line `use Component.Strategy.Dynamic to the top of this
+  * Add the line `use Component.Strategy.Dynamic` to the top of this
     module.
 
   * Adjust the other options if required.
 
   * To start the worker supervisor:
 
-        Workers.initialize()
+      ```
+      Workers.initialize()
+      ```
 
     or
 
-        Workers.initialize(initial_state)
+      ```
+      Workers.initialize(initial_state)
+      ```
 
   * Claim a worker using
 
-       worker = Workers.create()
+      ```
+      worker = Workers.create()
+      ```
 
   * Call functions in the module using
 
-       result = Workers.some_function(worker, other_args)
-       ...
+      ```
+      result = Workers.some_function(worker, other_args)
+      ...
+      ```
 
   * When you're finished with the worker, call
 
+      ```
       Workers.destroy(worker)
-
+      ```
 
 
   ### Example
