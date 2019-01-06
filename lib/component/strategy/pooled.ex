@@ -53,7 +53,7 @@ defmodule Component.Strategy.Pooled do
   ### Example
 
       defmodule FaceDetector do
-        using Jeeves.Pooled,
+        using Component.Strategy.Pooled,
               state: %{ algorithm: ViolaJones },
               state_name: :options,
               pool:  [ min: 3, max: 10 ]
@@ -65,7 +65,7 @@ defmodule Component.Strategy.Pooled do
 
   ### Options
 
-  You can pass a keyword list to `use Jeeves.Anonymous:`
+  You can pass a keyword list to `use Component.Strategy.Pooled:`
 
   * `state:` _value_
 

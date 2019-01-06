@@ -24,3 +24,4 @@ erl_crash.dump
 
 # Ignore package tarball (built via "mix hex.build").
 component-*.tar
+.DS_Store

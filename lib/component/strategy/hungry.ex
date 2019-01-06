@@ -8,7 +8,7 @@ defmodule Component.Strategy.Hungry do
   This processing occurs in parallel, up to a maximum concurrency you
   control. It is an efficient use of resources, as the scheduling is
   done automatically when each process finishes-there is no
-  preallocation of elements to processes.
+  preallocation of elements to process.
 
   ### Options
 
@@ -21,6 +21,9 @@ defmodule Component.Strategy.Hungry do
   * `default_concurrency:`
     The number of worker processes to start. Defaults to the number of
     active schedulers on the node running the component.
+
+  * `default_timeout:`
+    The overall processing timeout. Defaults to 5,000mS
 
   * `show_code:`
     Dumps the generated code to STDOUT if truthy.
@@ -58,6 +61,7 @@ defmodule Component.Strategy.Hungry do
 
   defp generate_hungry_service(caller, opts) do
     default_concurrency = opts[:default_concurrency] || System.schedulers_online()
+    default_timeout     = opts[:default_timeout]     || 5000
     name = opts[:name] || caller
 
     quote do
@@ -67,8 +71,12 @@ defmodule Component.Strategy.Hungry do
       end
 
       def consume(feed, options \\ []) do
-        concurrency = options[:concurrency] || unquote(default_concurrency)
-        result = Task.async_stream(feed, &process/1, max_concurrency: concurrency)
+        opts = [
+          max_concurrency: options[:concurrency] || unquote(default_concurrency),
+          timeout:         options[:timeout]     || unquote(default_timeout)
+        ]
+
+        result = Task.async_stream(feed, &process/1, opts)
                  |> Enum.map(fn { :ok, val } -> val end)
 
         case options[:into] do

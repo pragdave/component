@@ -1,6 +1,6 @@
-defmodule Examples.NamedCounter do
+defmodule Examples.DynamicCounter do
 
-  use Component.Strategy.Named,
+  use Component.Strategy.Dynamic,
       initial_state: 0,
       state_name: :tally,
       show_code:  false
@@ -30,11 +30,11 @@ end
 
 Process.whereis(ExUnit.Server) || ExUnit.start
 
-defmodule UseNamed do
+defmodule UseDynamic do
 
   use ExUnit.Case
 
-  alias Examples.NamedCounter, as: NC
+  alias Examples.DynamicCounter, as: NC
 
   # NOTE: because each test is run in its own process, we have to
   # initialize the component in each, as it is linked to the process

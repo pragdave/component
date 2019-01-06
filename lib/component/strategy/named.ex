@@ -1,8 +1,7 @@
-defmodule Component.Strategy.Named do
+defmodule Component.Strategy.Dynamic do
 
   @moduledoc """
-  Implement a named service. You can create any number of workers based
-  on the service.
+  Implement a service factory, which you can use to create any number of workers.
 
   ### Usage
 
@@ -19,7 +18,7 @@ defmodule Component.Strategy.Named do
 
     For this example, we'll call the module `Workers`.
 
-  * Add the line `use Component.Strategy.Named` to the top of this
+  * Add the line `use Component.Strategy.Dynamic to the top of this
     module.
 
   * Adjust the other options if required.
@@ -50,10 +49,10 @@ defmodule Component.Strategy.Named do
   ### Example
 
       defmodule FaceDetector do
-        using Jeeves.Named
+        using Component.Strategy.Dynamic
+
               state: %{ algorithm: ViolaJones },
               state_name: :options,
-              pool:  [ min: 3, max: 10 ]
 
         def recognize(image) do
           # calls to OpenCV or whatever...
@@ -62,7 +61,7 @@ defmodule Component.Strategy.Named do
 
   ### Options
 
-  You can pass a keyword list to `use Jeeves.Anonymous:`
+  You can pass a keyword list to `use Component.Strategy.Dynamic`:
 
   * `initial_state:` _value_
 
@@ -83,23 +82,6 @@ defmodule Component.Strategy.Named do
     The default name for the pool is the name of the module that defines
     it. Use `name:` to change this.
 
-  * `pool: [ ` _options_ ` ]`
-
-    Set options for the service pool. One or more of:
-
-    * `min: n`
-
-      The minimum number of workers that should be active, and by
-      extension the number of workers started when the pool is run.
-      Default is 2.
-
-    * `max: n`
-
-      The maximum number of workers. If all workers are busy and a new
-      request arrives, a new worker will be started to handle it if the
-      current worker count is less than `max`. Excess idle workers will
-      be quietly killed off in the background. Default value is
-      `(min+1)*2`.
 
   * `showcode:` _boolean_
 
@@ -147,7 +129,8 @@ defmodule Component.Strategy.Named do
       @name unquote(name)
 
       def initialize() do
-        Component.Strategy.Named.Supervisor.run(
+        Component.Strategy.Dynamic
+      .Supervisor.run(
           worker_module: __MODULE__.Worker,
           name:          @name)
       end
@@ -157,11 +140,13 @@ defmodule Component.Strategy.Named do
           __MODULE__.Worker,
           Common.derive_state(override_state, unquote(default_state)),
         }
-        Component.Strategy.Named.Supervisor.create(@name, spec)
+        Component.Strategy.Dynamic
+      .Supervisor.create(@name, spec)
       end
 
       def destroy(worker) do
-        Component.Strategy.Named.Supervisor.destroy(@name, worker)
+        Component.Strategy.Dynamic
+      .Supervisor.destroy(@name, worker)
       end
 
     end
@@ -176,9 +161,15 @@ defmodule Component.Strategy.Named do
 
     PS.stop(__CALLER__.module)
 
-    quote do
+    application = Common.maybe_create_application(options)
 
+    quote do
+      unquote(application)
       unquote_splicing(apis)
+
+      def wrapped_create() do
+        initialize()
+      end
 
       defmodule Worker do
         use GenServer
@@ -216,11 +207,20 @@ defmodule Component.Strategy.Named do
   end
 
   @doc false
-  defp api_body(one_or_two_way, _options, call) do
+  defp api_body(:one_way, _options, call) do
     request = call_signature(call)
     pid_var = { :worker_pid, [], nil }
     quote do
-      GenServer.unquote(invocation(one_or_two_way))(unquote(pid_var), unquote(request))
+      GenServer.cast(unquote(pid_var), unquote(request))
+    end
+  end
+
+
+  defp api_body(:two_way, options, call) do
+    request = call_signature(call)
+    pid_var = { :worker_pid, [], nil }
+    quote do
+      GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
     end
   end
 
@@ -232,9 +232,18 @@ defmodule Component.Strategy.Named do
   end
 
 
-  defp invocation(:one_way), do: :cast
-  defp invocation(:two_way), do: :call
-
+  defp genserver_timeout(options) do
+    case options[:timeout] do
+      nil ->
+        5_000
+      i when is_integer(i) ->
+        i
+      f when is_float(f) ->
+        :math.floor(f * 1000.0)
+      other ->
+        raise "Expecting integer or float for timeout value, but got #{inspect other}"
+    end
+  end
 
   @doc false
   defdelegate generate_handle_call(options,function),    to: Global

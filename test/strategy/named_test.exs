@@ -1,4 +1,4 @@
-defmodule Test.Strategy.Named do
+defmodule Test.Strategy.Dynamic do
 
   use ExUnit.Case
 
@@ -60,7 +60,7 @@ defmodule Test.Strategy.Named do
 
   defmodule Counter do
 
-    use Component.Strategy.Named,
+    use Component.Strategy.Dynamic,
         initial_state: 0,
         state_name: :tally,
         show_code:  false

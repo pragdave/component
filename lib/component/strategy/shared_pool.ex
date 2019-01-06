@@ -3,9 +3,10 @@ false && defmodule Component.Strategy.SharedPool do
   @moduledoc """
   Implement a singleton (global) named pool of services.
 
-  Creates a dynamic pool of worker services. Each service shares an initial state,
-  and each invocation of a service is independent from the previous one (so there
-  is no concept of claiming a service for your dedicated use).
+  Creates a dynamic pool of worker services. Each service shares an
+  initial state, and each invocation of a service is independent from
+  the previous one (so there is no concept of claiming a service for
+  your dedicated use).
 
   ### Prerequisites
 
@@ -16,26 +17,27 @@ false && defmodule Component.Strategy.SharedPool do
   To create the service:
 
   * Create a module that implements the API you want. This API will be
-    expressed as a set of public functions. Each function will automatically
-    receive the current state in a variable (by default named `state`). There is
-    not need to declare this as a parameter.[<small>why?</small>](#why-magic-state).
-    If a function wants to change the state, it must end with a call to the
-    `Jeeves.Common.update_state/2` function (which will have been
-    imported into your module automatically).
+    expressed as a set of public functions. Each function will
+    automatically receive the current state in a variable (by default
+    named `state`). There is not need to declare this as a
+    parameter.[<small>why?</small>](#why-magic-state). If a function
+    wants to change the state, it must end with a call to the
+    `update_state/2` function (which will have been imported into your
+    module automatically).
 
     For this example, we'll call the module `PooledService`.
 
-  * Add the line `use Jeeves.Pooled` to the top of this module.
+  * Add the line `use Component.Strategy.Pooled` to the top of this module.
 
   * Adjust the other options if required.
 
     To start the pool:
 
-        PooledJeeves.run()
+        PooledService.run()
 
     or
 
-        PooledJeeves.run(initial_state)
+        PooledService.run(initial_state)
 
   To consume the service:
 
@@ -45,7 +47,7 @@ false && defmodule Component.Strategy.SharedPool do
   ### Example
 
       defmodule FaceDetector do
-        using Jeeves.Pooled,
+        use Component.Strategy.Pooled,
               state: %{ algorithm: ViolaJones },
               state_name: :options,
               pool:  [ min: 3, max: 10 ]
@@ -57,24 +59,25 @@ false && defmodule Component.Strategy.SharedPool do
 
   ### Options
 
-  You can pass a keyword list to `use Jeeves.Anonymous:`
+  You can pass a keyword list to `use Component.Strategy.Pooled:`
 
   * `state:` _value_
 
-    The default value for the initial state of all workers. Can be overridden
-    (again for all workers) by passing a value to `run()`
+    The default value for the initial state of all workers. Can be
+    overridden (again for all workers) by passing a value to `run()`
 
   * `state_name:` _atom_
 
-    The default name for the state variable is (unimaginatively)  `state`.
-    Use `state_name` to override this. For example, the previous
-    example named the state `options`, and inside the `recognize` function
-    your could write `options.algorithm` to look up the algorithm to use.
+    The default name for the state variable is (unimaginatively)
+    `state`. Use `state_name` to override this. For example, the
+    previous example named the state `options`, and inside the
+    `recognize` function your could write `options.algorithm` to look up
+    the algorithm to use.
 
   * `name:` _atom_
 
-    The default name for the pool is the name of the module that defines it.
-    Use `name:` to change this.
+    The default name for the pool is the name of the module that defines
+    it. Use `name:` to change this.
 
   * `pool: [ ` _options_ ` ]`
 
@@ -82,27 +85,29 @@ false && defmodule Component.Strategy.SharedPool do
 
     * `min: n`
 
-      The minimum number of workers that should be active, and by extension
-      the number of workers started when the pool is run. Default is 2.
+      The minimum number of workers that should be active, and by
+      extension the number of workers started when the pool is run.
+      Default is 2.
 
     * `max: n`
 
-      The maximum number of workers. If all workers are busy and a new request
-      arrives, a new worker will be started to handle it if the current worker
-      count is less than `max`. Excess idle workers will be quietly killed off
-      in the background. Default value is `(min+1)*2`.
+      The maximum number of workers. If all workers are busy and a new
+      request arrives, a new worker will be started to handle it if the
+      current worker count is less than `max`. Excess idle workers will
+      be quietly killed off in the background. Default value is
+      `(min+1)*2`.
 
   * `showcode:` _boolean_
 
-    If truthy, dump a representation of the generated code to STDOUT during
-    compilation.
+    If truthy, dump a representation of the generated code to STDOUT
+    during compilation.
 
   * `timeout:` integer or float
 
-    Specify the timeout to be used when the client calls workers in the pool.
-    If all workers are busy, and none becomes free in that time, an OTP
-    exception is raised. An integer specifies the timeout in milliseconds, and
-    a float in seconds (so 1.5 is the same as 1500).
+    Specify the timeout to be used when the client calls workers in the
+    pool. If all workers are busy, and none becomes free in that time,
+    an OTP exception is raised. An integer specifies the timeout in
+    milliseconds, and a float in seconds (so 1.5 is the same as 1500).
 
   """
 

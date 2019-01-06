@@ -1,6 +1,4 @@
-work in progress warning:
 
-#  ☠☠ DON'T EVEN THINK OF USING THIS ☠☠
 
 <img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/g4547.png"/>
 
@@ -11,21 +9,31 @@ attempt to make it so easy to write trivial standalone servers that
 people will just naturally split their applications up that way.
 
 A component is a simple module, containing what look like function
-definitions. This library generates from it an API module, a GenServer module,
-and an implementation module.
+definitions. This library generates from it an API module, a GenServer
+module, and an implementation module.
 
+<!--
 The component library is part of the
 [Toyland](https://github.com/pragdave/toyland) suite.  You can use it
-standalone, but if you assembly components together using [Noddy](https://github.com/pragdave/noddy)
-you'll automatically get deployment support, statsd/telegraf compatible
-data collection on every request, shared logging, and world peace.
+standalone, but if you assembly components together using
+[Noddy](https://github.com/pragdave/noddy) you'll automatically get
+deployment support, statsd/telegraf compatible data collection on every
+request, shared logging, and world peace.
+-->
+
+> #### ⚠ Developer Health Warning ⚠
+>
+> The component library is a work in progress. It seems to work, but it
+> is not yet battle tested. As people play with it, we'll end up making
+> changes to fix problems and add cool facilities. Please experiment
+> with it. But don't bet your business on it.
 
 ### Component Types
 
 We support a number of component types:
 
 * [global](#global-components): a singleton process
-* [named](#named-components): on-demand processes
+* [dynamic](#dynamic-components): on-demand processes
 * [pooled](#pooled-components): a pool of processes that typically
   represent limited resources
 * [hungry](#hungry-components): a pool of processes that process a
@@ -75,21 +83,21 @@ Then, anywhere in the application, you can get a random word using
   word = Dictionary.random_word()
   ~~~
 
-#### Named Components
+#### Dynamic Components
 
-A _named_ component is a factory that creates worker processes on
+A _dynamic_ component is a factory that creates worker processes on
 demand. The workers run the code declared in the component's module.
 Each worker maintains its own state. When you're done with a worker, you
-destroy it. You could create named components when someone first
+destroy it. You could create dynamic components when someone first
 connects to your web app, and use it to maintain that person's state for
 the lifetime of their session.
 
-Here's a named component that implements a set of counters:
+Here's a dynamic component that implements a set of counters:
 
   ~~~ elixir
   defmodule Counter do
 
-    use Component.Strategy.Named,
+    use Component.Strategy.Dynamic,
         state_name:    :count,
         initial_state: 0
 
@@ -103,7 +111,7 @@ Here's a named component that implements a set of counters:
   end
   ~~~
 
-Because the named component has multiple workers, you must first
+Because the dynamic component has multiple workers, you must first
 initialize the overall component. This is a one-time thing:
 
   ~~~ elixir
@@ -326,7 +334,7 @@ The following component has a two element map as a state. The
 overwritten by create:
 
 ~~~ elixir
-use Component.Strategy.Named,
+use Component.Strategy.Dynamic,
     initial_state: fn overrides ->
       Map.merge(
         %{ one: :default_one, two: :default_two },
@@ -344,7 +352,7 @@ The second way to set the state is when you create a worker.
 
 ~~~ elixir
 defmodule Counter do
-  use Component.Strategy.Named,
+  use Component.Strategy.Dynamic,
       state_name:    :count,
       initial_state: 0
 
@@ -371,13 +379,13 @@ to identify a particular worker, as there is only one per component. A
 global component may be destroyed, in which case it must be recreated
 before being used again.
 
-Named and pooled components must be initialized. This process does not
+Dynamic and pooled components must be initialized. This process does not
 necessarily create any worker processes; it simply prepares the
 component for use.
 
-With named components you gain access to a worker by telling the
+With dynamic components you gain access to a worker by telling the
 component to create it. This returns an identifier for that worker
-process, which you must pass to subsequen calls to functions in the
+process, which you must pass to subsequent calls to functions in the
 component. You should eventually destroy workers that you create.
 
 Pooled components are automatically created when needed, so there's no
@@ -386,7 +394,7 @@ need to call their `create` function.
 | Type    | Initialize | Create/destroy |      Call      |
 |---------|:----------:|:--------------:|:--------------:|
 | Global  |     —      |       ✔        |       ✔       |
-| Named   |     ✔      |       ✔        |       ✔       |
+| Dynamic |     ✔      |       ✔        |       ✔       |
 | Pooled  |     ✔      |       —        |       ✔       |
 | Hungry  |     ✔      |       —        |  `consume()`  |
 

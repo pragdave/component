@@ -1,4 +1,4 @@
-defmodule Component.Strategy.Named.Supervisor do
+defmodule Component.Strategy.Dynamic.Supervisor do
 
   @moduledoc """
   This module allows you to create one or more named dynamic
