@@ -24,12 +24,12 @@ defmodule Component.MixProject do
     defp docs do
       [
         name:         "Component",
-        source_url:   "https://github.com/pragdave.component",
-        homepage_url: "https://github.com/pragdave.component",
+        source_url:   "https://github.com/pragdave/component",
+        homepage_url: "https://github.com/pragdave/component",
         docs: [
+          extras: [ "README.md" ],
           main:   "readme",
           logo:   "assets/color_puzzle_background_531533.png",
-          extras: [ "README.md" ],
           assets: "assets",
         ]
       ]
@@ -60,7 +60,6 @@ defmodule Component.MixProject do
         "lib",
         "mix.exs",
         "README.md",
-        "assets/logo-large.png"
       ],
       contributors: [
         "Dave Thomas <dave@pragdave.me>",
