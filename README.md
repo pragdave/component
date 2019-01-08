@@ -181,20 +181,20 @@ component is a fairly big deal.
 
 > #### An aside: Application/Project/Component/Service/...?
 >
->Elixir has unfortunately adopted some of the bad naming history from
->Erlang. As a result, we have words such as _project_ and _application_
->that can mean many different things, even within the same codebase.
+> Elixir has unfortunately adopted some of the bad naming history from
+> Erlang. As a result, we have words such as _project_ and _application_
+> that can mean many different things, even within the same codebase.
 >
->I'm proposing we clarify things. Let's call the thing created when we
->run `mix new` a _component_. A component is an entity that can be
->shared and deployed. It has its own set of dependencies and
->configuration. It can be stored in its own source control repository or
->hex project (although it needn't be)
+> I'm proposing we clarify things. Let's call the thing created when we
+> run `mix new` a _component_. A component is an entity that can be
+> shared and deployed. It has its own set of dependencies and
+> configuration. It can be stored in its own source control repository or
+> hex project (although it needn't be)
 >
->When we create something that delivers business value, we package
->together a number of components. One of these is nominated to be the
->code's entry point (using `mod:` in `mix.exs`). Let's call this thing
->that we built an _assembly_.
+> When we create something that delivers business value, we package
+> together a number of components. One of these is nominated to be the
+> code's entry point (using `mod:` in `mix.exs`). Let's call this thing
+> that we built an _assembly_.
 
 Back to the story...
 
