@@ -176,6 +176,9 @@ defmodule Component.Strategy.Global do
 
   @doc false
   def generate_api_call(options, {one_or_two_way, call, _body}) do
+    { name, context, args } = call
+    call = { name, context, args_without_state(args, options) }
+    IO.inspect call: call
     quote do
       def(unquote(call), do: unquote(api_body(one_or_two_way, options, call)))
     end
@@ -183,7 +186,7 @@ defmodule Component.Strategy.Global do
 
   @doc false
   defp api_body(one_or_two_way, options, call) do
-    request = call_signature(call)
+    request = call_signature(call, options)
     quote do
       GenServer.unquote(invocation(one_or_two_way))({ :via, :global, unquote(service_name(options)) }, unquote(request))
     end
@@ -194,7 +197,7 @@ defmodule Component.Strategy.Global do
 
   @doc false
   def generate_handle_call(options, { one_or_two_way, call, _body}) do
-    request  = call_signature(call)
+    request  = call_signature(call, options)
     api_call = api_signature(options, call)
     state_var = { state_name(options), [], nil }
 
@@ -224,8 +227,6 @@ defmodule Component.Strategy.Global do
 
   @doc false
   def generate_implementation(options, {_one_or_two_way, call, do: body}) do
-
-
     fix_warning = quote do
       _ = var!(unquote({ state_name(options), [], Elixir }))
       unquote(body)
@@ -241,13 +242,10 @@ defmodule Component.Strategy.Global do
   def generate_delegator(_options, {_one_or_two_way, _call, _body}), do: nil
 
 
-  # given def fred(a, b) return { :fred, a, b }
+  # given def fred(a, b) return { :fred, a, b } (in quoted form)
   @doc false
-  def call_signature({ name, _, args }) do
-    no_state_args = args
-                    |> Enum.reject(fn { name, _, _ } -> name == :state end)
-                    |> Enum.map(fn name -> var!(name) end)
-
+  def call_signature({ name, _, args }, options) do
+    no_state_args = args_without_state(args, options)
     { :{}, [], [ name |  no_state_args ] }
   end
 
@@ -256,6 +254,13 @@ defmodule Component.Strategy.Global do
   @doc false
   def api_signature(options, { name, context, args }) do
     { name, context, [ { state_name(options), [], nil } | args ] }
+  end
+
+  def args_without_state(args, options) do
+    state_name = state_name(options)
+    args
+    |> Enum.reject(fn { name, _, _ } -> name == state_name end)
+    |> Enum.map(fn name -> var!(name) end)
   end
 
   @doc false

@@ -112,7 +112,7 @@ defmodule Component.Strategy.Common do
   end
 
 
-  # # The strategy is the module (Anonymous, Named, Pooled)
+  # # The strategy is the module (Global, Dynamic, Pooled)
 
 
   @doc false
@@ -124,6 +124,7 @@ defmodule Component.Strategy.Common do
     PS.stop(caller)
 
     application = maybe_create_application(options)
+
     quote do
       use GenServer
 

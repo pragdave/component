@@ -120,7 +120,7 @@ defmodule Component.Strategy.Pooled do
 
 
   alias Component.Strategy.PreprocessorState, as: PS
-  alias Component.Strategy.{Common, Global}
+  alias Component.Strategy.{Common, Dynamic, Global}
 
   @doc false
   defmacro __using__(opts \\ []) do
@@ -208,7 +208,7 @@ defmodule Component.Strategy.Pooled do
   end
 
   def generate_api_call(options, {one_or_two_way, call, _body}) do
-    args_with_pid = signature_with_pid(call)
+    args_with_pid = signature_with_pid(call, options)
     quote do
       def(unquote(args_with_pid), do: unquote(api_body(one_or_two_way, options, call)))
     end
@@ -216,18 +216,38 @@ defmodule Component.Strategy.Pooled do
 
   # Prepend `worker_pid` to the calling sequence of a function
   # definition
-  defp signature_with_pid({ name, context, args }) do
+  defp signature_with_pid({ name, context, args }, options) do
+    args = Global.args_without_state(args, options)
     { name, context, [ { :worker_pid, [line: 1], nil } | args ]}
   end
 
-  @doc false
-  defp api_body(one_or_two_way, _options, call) do
-    request = call_signature(call)
-    pid_var = { :worker_pid, [], nil }
-    quote do
-      GenServer.unquote(invocation(one_or_two_way))(unquote(pid_var), unquote(request))
-    end
-  end
+  defdelegate api_body(one_or_two_way, options, call), to: Dynamic
+  # @doc false
+  # defp api_body(one_or_two_way, _options, call) do
+  #   request = call_signature(call)
+  #   pid_var = { :worker_pid, [], nil }
+  #   quote do
+  #     GenServer.unquote(invocation(one_or_two_way))(unquote(pid_var), unquote(request))
+  #   end
+  # end
+
+    #@doc false
+    # defp api_body(:one_way, options, call) do
+    #   request = Global.call_signature(call, options)
+    #   pid_var = { :worker_pid, [], nil }
+    #   quote do
+    #     GenServer.cast(unquote(pid_var), unquote(request))
+    #   end
+    # end
+
+
+    # defp api_body(:two_way, options, call) do
+    #   request = Global.call_signature(call, options)
+    #   pid_var = { :worker_pid, [], nil }
+    #   quote do
+    #     GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
+    #   end
+    # end
 
   # given def fred(a, b) return { :fred, a, b }
   @doc false
@@ -237,8 +257,8 @@ defmodule Component.Strategy.Pooled do
   end
 
 
-  defp invocation(:one_way), do: :cast
-  defp invocation(:two_way), do: :call
+  # defp invocation(:one_way), do: :cast
+  # defp invocation(:two_way), do: :call
 
 
   @doc false
@@ -257,7 +277,7 @@ defmodule Component.Strategy.Pooled do
   @doc false
   def delegate_body(options, call) do
     timeout = options[:timeout] || 5000
-    request = Global.call_signature(call)
+    request = Global.call_signature(call, options)
     quote do
       Component.Scheduler.run(@name, unquote(request), unquote(timeout))
     end

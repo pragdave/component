@@ -203,7 +203,7 @@ defmodule Component.Strategy.Dynamic do
   end
 
   def generate_api_call(options, {one_or_two_way, call, _body}) do
-    args_with_pid = signature_with_pid(call)
+    args_with_pid = signature_with_pid(call, options)
     quote do
       def(unquote(args_with_pid), do: unquote(api_body(one_or_two_way, options, call)))
     end
@@ -211,13 +211,14 @@ defmodule Component.Strategy.Dynamic do
 
   # Prepend `worker_pid` to the calling sequence of a function
   # definition
-  defp signature_with_pid({ name, context, args }) do
+  defp signature_with_pid({ name, context, args }, options) do
+    args = Global.args_without_state(args, options)
     { name, context, [ { :worker_pid, [line: 1], nil } | args ]}
   end
 
   @doc false
-  defp api_body(:one_way, _options, call) do
-    request = call_signature(call)
+  def api_body(:one_way, options, call) do
+    request = Global.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
       GenServer.cast(unquote(pid_var), unquote(request))
@@ -225,8 +226,8 @@ defmodule Component.Strategy.Dynamic do
   end
 
 
-  defp api_body(:two_way, options, call) do
-    request = call_signature(call)
+  def api_body(:two_way, options, call) do
+    request = Global.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
       GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
@@ -235,10 +236,12 @@ defmodule Component.Strategy.Dynamic do
 
   # given def fred(a, b) return { :fred, a, b }
   @doc false
-  def call_signature({ name, _, args }) do
-    args = args |> Enum.map(fn name -> var!(name) end)
-    { :{}, [], [ name |  args ] }
-  end
+  # def call_signature({ name, _, args }, options) do
+  #   args
+  #   |> Global.args_without_state(options)
+  #   |> Enum.map(fn name -> var!(name) end)
+  #   { :{}, [], [ name |  args ] }
+  # end
 
 
   defp genserver_timeout(options) do
@@ -270,7 +273,7 @@ defmodule Component.Strategy.Dynamic do
   @doc false
   def delegate_body(options, call) do
     timeout = options[:timeout] || 5000
-    request = Global.call_signature(call)
+    request = Global.call_signature(call, options)
     quote do
       Component.Scheduler.run(@name, unquote(request), unquote(timeout))
     end
