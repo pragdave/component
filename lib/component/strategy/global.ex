@@ -178,7 +178,6 @@ defmodule Component.Strategy.Global do
   def generate_api_call(options, {one_or_two_way, call, _body}) do
     { name, context, args } = call
     call = { name, context, args_without_state(args, options) }
-    IO.inspect call: call
     quote do
       def(unquote(call), do: unquote(api_body(one_or_two_way, options, call)))
     end
