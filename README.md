@@ -64,12 +64,12 @@ defmodule FourOhFour do
 end
 ~~~
 
-You're a thoughtful developer, so you decided that the users of your
-module shouldn't have to know about it's internal state, so you provided
+You're a thoughtful developer: you decided that the users of your
+module shouldn't have to know about its internal state, so you provided
 a `create` function that returns the initial empty map.
 
 You submit the PR, and the reviewers come back with "where's the
-GenServer." You refrain from the obvious "you never mentioned it should
+GenServer?". You refrain from the obvious "you never mentioned it should
 be a server" and instead modify your module:
 
 ~~~ elixir
@@ -110,7 +110,7 @@ API, the implementation, and all the housekeeping, but everyone does it
 that way....
 
 Another day, another code review. Someone just realized that there's
-only one instance of this 404 store, so we can make it s named process
+only one instance of this 404 store, so we can make it a named process
 and stop having to pass the pid around. You sigh and fire up the editor:
 
 ~~~ elixir
@@ -156,6 +156,8 @@ A month later the project lead for a different application comes over.
 logging." she says. Can you turn it into a standalone Elixir application
 so we can include it as a dependency?
 
+You start to work on your resumé.
+
 ## The Start of a Moral
 
 That's a lot of code churn. And none of it involved the actually logic
@@ -199,14 +201,15 @@ Back to the story...
 We all know that highly coupled code is hard to change, and that the
 need to accommodate change is why we spend time thinking about good
 design. If we came from a Rails background, we've heard stories of (or
-participated in _Monorail_ projects: single Rails applications with
+participated in) _Monorail_ projects: single Rails applications with
 hundreds of classes, tens or hundreds of thousands of lines of code, and
 a dependency map that looks like the wad of hair you pull out of the
 shower drain.
 
 Rails apps get that way because it's easier to add new code into the
-existing code base than to split it out as a separate entity. It's
-convenience over conscience.
+existing code base than to split it out as a separate entity.
+
+It's _convenience over conscience_.
 
 I see a lot of evidence that we're falling into the same habits in the
 Elixir world. I've seen many multi-thousand line modules. I've rarely
@@ -264,19 +267,29 @@ end
 ~~~
 
 The `use Component...` stuff says that this module is a GenServer (by
-default named t=he same as the module). The variable `history` is used
+default named the same as the module). The variable `history` is used
 to pass around the state, and the initial value of the state for each
-server we create is the empty map.
+server we create is the empty map. We start its supervisor running with
+
+~~~ elixir
+FourOhFour.initialize()
+~~~
+
+and create new server processes with
+
+~~~ elixir
+FourOhFour.create()
+~~~
 
 The only other change to the original is that we changed the `def` of
-the `record_404` function to be `one_way`, and the `def` for `for_user`
+the `record_404` function to be `one_way`, and the `def` of `for_user`
 to be `two_way`.
 
-A one-way function's prime job is to update state. It's return value
+A one-way function's prime job is to update state. Its return value
 becomes the new state of our server. It is implemented under the covers
 using a GenServer _cast_.
 
-A two-way function returns a value (and so is a GenServer _call_). It's
+A two-way function returns a value (and so is a GenServer _call_). Its
 return value is what is given back to the called of the API. If you
 don't need to update state, that's all you have to do. If you _do_ need
 to change the state as well as return a value, you can do it as well.
@@ -602,12 +615,9 @@ end
 With the exception of hungry consumers, all component types run one or
 more worker processes, and those workers maintain state.
 
-The Component library handles state a little differently (some would say
-controversially). Rather than declare the state as a parameter in all
-the component's functions, you give it a name at the top of your module
-in the `using` clause. The state is then available inside your
-component's functions using that name:
-
+The Component library makes you use the same name for this state in all
+your `one_way` and `two_way` functions. This name is `state` by default,
+but can be changed using the `state_name:` option.
 
 ~~~ elixir
 defmodule Dictionary do
@@ -616,11 +626,11 @@ defmodule Dictionary do
       state_name:    :word_list,           # <- our state is called `word_list`
       initial_state: read_word_list()
 
-   two_way random_word() do
+   two_way random_word(word_list) do
     word_list |> Enum.random()             # <- and we can refer to it by name
   end
 
-   defp read_word_list() do
+   defp read_word_list(word_list) do
     "../assets/words.txt"
     |> Path.expand(__DIR__)
     |> File.read!
@@ -628,6 +638,39 @@ defmodule Dictionary do
   end
 end
 ~~~
+
+> #### Controversy Trigger Alert!
+>
+> People with a strong abhorrence of magic should skip the next section.
+
+Because you declare the name to be used as the state variable, you can
+omit it as a parameter to `one_way` and `two_way` and the component
+library will add it in for you:
+
+~~~ elixir
+defmodule Dictionary do
+
+   use Component.Strategy.Global,
+      state_name:    :word_list,           # <- our state is called `word_list`
+      initial_state: read_word_list()
+
+   two_way random_word() do                # <- no explicit parameter
+    word_list |> Enum.random()             #    but we can refer to it by name
+  end
+
+  # ...
+end
+~~~
+
+Why would I even countenance such an evil use of the dark arts? It's
+because I wanted to be able to write the one- and two-way functions to
+reflect the way they are called and not the way they're implemented. In
+a global component you'd call `Dictionary.random_word()` with no
+parameter, and I wanted the code in the module to look like this.
+
+The library doesn't mind if you include the state variable or not: it's
+up to you
+
 
 #### Initial State
 
@@ -646,7 +689,7 @@ use Component.Strategy.Global,
 You can override this initial state when you create a component by
 passing a value to `create()`.
 
-Second, you can specify the default initial state using a function or
+Second, you can specify the default initial state using a function of
 arity one.
 
 When you call `create` for such a component, the override value you give
@@ -695,6 +738,141 @@ Here, it you call `Counter.create()`, the initial state will be set to
 `0`, the value in the `using` clause. If instead you pass a value, such
 as `Counter.create(99)`, that value will be used to set the state.
 
+### Name Scope
+
+You can inspect the code created by component by adding the `show_code:
+true` option. Here's the code for the Counter module:
+
+~~~ elixir
+defmodule FourOhFour do
+  @name Counter
+  def initialize() do
+    Component.Strategy.Dynamic.Supervisor.run(worker_module: __MODULE__.Worker, name: @name)
+  end
+
+  def create(override_state \\ CA.no_overrides()) do
+    spec = {__MODULE__.Worker, Common.derive_state(override_state, 0)}
+    Component.Strategy.Dynamic.Supervisor.create(@name, spec)
+  end
+
+  def destroy(worker) do
+    Component.Strategy.Dynamic.Supervisor.destroy(@name, worker)
+  end
+
+  nil
+
+  def increment(worker_pid, by) do
+    GenServer.cast(worker_pid, {:increment, by})
+  end
+
+  def value(worker_pid) do
+    GenServer.call(worker_pid, {:value}, 5000)
+  end
+
+  def wrapped_create() do
+    initialize()
+  end
+
+  defmodule(Worker) do
+    use(GenServer)
+
+    def start_link(args) do
+      GenServer.start_link(__MODULE__, args)
+    end
+
+    def init(state) do
+      {:ok, state}
+    end
+
+    def handle_cast({:increment, by}, șțąțɇ) do
+      count = șțąțɇ
+      new_state = __MODULE__.Implementation.increment(count, by)
+      {:noreply, new_state}
+    end
+
+    def handle_call({:value}, _, șțąțɇ) do
+      count = șțąțɇ
+      __MODULE__.Implementation.value(count) |> Common.create_genserver_response(șțąțɇ)
+    end
+
+    defmodule(Implementation) do
+      def increment(count, by) do
+        _ = var!(count)
+        count + by
+      end
+
+      def value(count) do
+        _ = var!(count)
+        count
+      end
+    end
+  end
+end
+~~~
+
+Notice that we have three modules here. The top-level `FourOhFour`
+contains the external API. The nested `Worked` module is the Genserver
+code, and the `Implementation` module contains the code that you wrote
+inside the one-way and two-way functions.
+
+This structure reflects the way I've been writing GenServers by hand
+(although I put `Worker` and `Implementation` into their own files).
+
+However, it has a side-effect. The code inside your one- and two-way
+functions actually executes inside its own module. As a result this code
+won't work:
+
+~~~ elixir
+defmodule SalesTax do
+  use Component.Strategy.Dynamic,
+      state_name:    :count,
+      initial_state: 0
+
+  two_way calculate_tax(item, quantity) do
+    sales_tax_calculation(item.price, item.tax_type, quantity)
+  end
+
+  def sales_tax_calculation(item.price, item.tax_type, quantity) do
+    # ...
+  end
+end
+~~~
+
+The problem is that the call to `sales_tax_calculation` happens inside
+the `SalesTax.Implementation` module and the function itself is defined
+in `SalesTax`.
+
+Originally I solved this issue by automatically moving all functions
+defined at the top-level into the `Implementation` module. But I took
+that out after I'd used it for a while. The reason is that I found it
+tempted me into writing large modules containing the entire
+implementation. I'd add just one more `wafer-thin function` because it
+was easy.
+
+Now I simply write all the support code in one or more separate modules.
+If there are only one or two of these support functions, I might just
+put them into a `Helpers` module inside the top-level:
+
+~~~ elixir
+defmodule SalesTax do
+  use Component.Strategy.Dynamic,
+      state_name:    :count,
+      initial_state: 0
+
+  two_way calculate_tax(item, quantity) do
+    Helpers.sales_tax_calculation(item.price, item.tax_type, quantity)
+  end
+
+  defmodule Helpers do
+    def sales_tax_calculation(item.price, item.tax_type, quantity) do
+      # ...
+    end
+  end
+end
+~~~
+
+However, as soon as this module threatens to become larger than a
+handful of lines I'll split it out into its own file.
 
 ### Component Lifecycle
 
