@@ -28,6 +28,331 @@ request, shared logging, and world peace.
 > changes to fix problems and add cool facilities. Please experiment
 > with it. But don't bet your business on it.
 
+## 🗺 README Roadmap
+
+Sometimes you want your palate to be tempted. Sometimes you just
+want to eat.
+
+The first part of this README is the motivation for this library. It's a
+quick read, but feel free to [skip it](#the-details) if you're looking
+for the main course.
+
+Still here? Cool. Here's a story…
+
+# Let's Grow a Service
+
+Monday starts with a new user story. The UI folks want to keep a list of
+which users get "page not found" responses from our app. Someone else is
+modifying the controller chain: our job is to record the data.
+
+You decide to implement a simple map where the keys are the user IDs and
+the values are a list of the URLs that 404'd for that user.
+
+~~~ elixir
+defmodule FourOhFour do
+  def create() do
+    %{}
+  end
+
+  def record_404(history, user, url) do
+    Map.update(history, user, [ url ], &[ url | &1 ])
+  end
+
+  def for_user(history, user) do
+    Map.get(history, user, [])
+  end
+end
+~~~
+
+You're a thoughtful developer, so you decided that the users of your
+module shouldn't have to know about it's internal state, so you provided
+a `create` function that returns the initial empty map.
+
+You submit the PR, and the reviewers come back with "where's the
+GenServer." You refrain from the obvious "you never mentioned it should
+be a server" and instead modify your module:
+
+~~~ elixir
+defmodule FourOhFour do
+  use GenServer
+
+  def start_link() do
+    GenServer.start_link(__MODULE__, %{})
+  end
+
+  def record_404(pid, user, url) do
+    GenServer.cast(pid, { :record_404, user, url })
+  end
+
+  def for_user(pid, user) do
+    GenServer.call(pid, { :for_user, user })
+  end
+
+  def init(empty_history) do
+    { :ok, empty_history }
+  end
+
+  def handle_cast({ :record_404, user, url }, history) do
+    new_history = Map.update(history, user, [ url ], &[ url | &1 ])
+    { :noreply, new_history }
+  end
+
+  def handle_call({ :for_user, user }, _from, history) do
+    result = Map.get(history, user, [])
+    { :reply, result, history }
+  end
+end
+~~~
+
+This is the canonical Elixir GenServer, drawn straight from the original
+Erlang. You've always felt uncomfortable with the way it intermixes the
+API, the implementation, and all the housekeeping, but everyone does it
+that way....
+
+Another day, another code review. Someone just realized that there's
+only one instance of this 404 store, so we can make it s named process
+and stop having to pass the pid around. You sigh and fire up the editor:
+
+~~~ elixir
+defmodule FourOhFour do
+
+  use GenServer
+
+  @me __MODULE__
+
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, %{}, name: @me)
+  end
+
+  def record_404(user, url) do
+    GenServer.cast(@me, { :record_404, user, url })
+  end
+
+  def for_user(user) do
+    GenServer.call(@me, { :for_user, user })
+  end
+
+  def init(empty_history) do
+    { :ok, empty_history }
+  end
+
+  def handle_cast({ :record_404, user, url }, history) do
+    new_history = Map.update(history, user, [ url ], &[ url | &1 ])
+    { :noreply, new_history }
+  end
+
+  def handle_call({ :for_user, user }, _from, history) do
+    result = Map.get(history, user, [])
+    { :reply, result, history }
+  end
+end
+~~~
+
+That's something else that's always bugged you: the way the API code has
+to change even though we just changed the implementation. Oh well....
+
+A month later the project lead for a different application comes over.
+"We really like the results that folks are seeing with your 404
+logging." she says. Can you turn it into a standalone Elixir application
+so we can include it as a dependency?
+
+## The Start of a Moral
+
+That's a lot of code churn. And none of it involved the actually logic
+of the module; it was all the boilerplate surrounding code that changed.
+
+Clearly, this is the kind of stuff we do all the time, and the changes
+are so minor that we just shrug them off as a cost of doing business.
+
+But I think the real cost is nothing to do with writing all those
+`handle_xxx` functions. Instead the cost is in the way we think about
+our code.
+
+When we come to write something in Elixir, we're forced to answer two
+questions at the same time: how does it work, and how does it run?
+What's the logic, and what's the lifecycle? And we have to know both
+before we start. Switching lifecycle models has a (small) cost, and that
+means we try to guess it right up front. Changing from a library module
+to a server is fairly mechanical, but it still doubles the size of the
+code. And changing from a server to a free-standing
+component is a fairly big deal.
+
+> #### An aside: Application/Project/Component/Service/...?
+>
+>Elixir has unfortunately adopted some of the bad naming history from
+>Erlang. As a result, we have words such as _project_ and _application_
+>that can mean many different things, even within the same codebase.
+>
+>I'm proposing we clarify things. Let's call the thing created when we
+>run `mix new` a _component_. A component is an entity that can be
+>shared and deployed. It has its own set of dependencies and
+>configuration. It can be stored in its own source control repository or
+>hex project (although it needn't be)
+>
+>When we create something that delivers business value, we package
+>together a number of components. One of these is nominated to be the
+>code's entry point (using `mod:` in `mix.exs`). Let's call this thing
+>that we built an _assembly_.
+
+Back to the story...
+
+We all know that highly coupled code is hard to change, and that the
+need to accommodate change is why we spend time thinking about good
+design. If we came from a Rails background, we've heard stories of (or
+participated in _Monorail_ projects: single Rails applications with
+hundreds of classes, tens or hundreds of thousands of lines of code, and
+a dependency map that looks like the wad of hair you pull out of the
+shower drain.
+
+Rails apps get that way because it's easier to add new code into the
+existing code base than to split it out as a separate entity. It's
+convenience over conscience.
+
+I see a lot of evidence that we're falling into the same habits in the
+Elixir world. I've seen many multi-thousand line modules. I've rarely
+seen a Phoenix app where the developers have implemented the business
+logic in other, free-standing apps (and I don't count the things in
+umbrella apps as being free standing, firstly because the individual
+components are not sharable, and secondly because that fact that all the
+code is in one place tempts developers to just call randomly between the
+child apps.)
+
+So the _Component_ library is an attempt to start an exploration of
+alternatives. It's a first try at a framework that guides us to
+think of our code as self-contained components. It does this by making
+components as easy to write and use as any other code.
+
+### Components ands the 404 Logger
+
+Let's go back to the original 404 component. The initial implementation
+stays the same:
+
+~~~ elixir
+defmodule FourOhFour do
+  def create() do
+    %{}
+  end
+
+  def record_404(history, user, url) do
+    Map.update(history, user, [ url ], &[ url | &1 ])
+  end
+
+  def for_user(history, user) do
+    Map.get(history, user, [])
+  end
+end
+~~~
+
+Now someone says they want it to be a server. We use the component
+framework to add all the boilerplate for us:
+
+~~~ elixir
+defmodule FourOhFour do
+
+  use Component.Strategy.Dynamic,
+      state_name:    :history,
+      initial_state: %{}
+
+  one_way record_404(history, user, url) do
+    Map.update(history, user, [ url ], &[ url | &1 ])
+  end
+
+  two_way for_user(history, user) do
+    Map.get(history, user, [])
+  end
+end
+~~~
+
+The `use Component...` stuff says that this module is a GenServer (by
+default named t=he same as the module). The variable `history` is used
+to pass around the state, and the initial value of the state for each
+server we create is the empty map.
+
+The only other change to the original is that we changed the `def` of
+the `record_404` function to be `one_way`, and the `def` for `for_user`
+to be `two_way`.
+
+A one-way function's prime job is to update state. It's return value
+becomes the new state of our server. It is implemented under the covers
+using a GenServer _cast_.
+
+A two-way function returns a value (and so is a GenServer _call_). It's
+return value is what is given back to the called of the API. If you
+don't need to update state, that's all you have to do. If you _do_ need
+to change the state as well as return a value, you can do it as well.
+
+Now the second code review asks for this to become a singleton named server. We
+sigh at the magnitude of the request and change the code:
+
+~~~ elixir
+defmodule FourOhFour do
+
+  use Component.Strategy.Global,
+      state_name:    :history,
+      initial_state: %{}
+
+  one_way record_404(history, user, url) do
+    Map.update(history, user, [ url ], &[ url | &1 ])
+  end
+
+  two_way for_user(history, user) do
+    Map.get(history, user, [])
+  end
+end
+~~~
+
+Yup: the only change is to use the `Global` strategy.
+
+Finally, we're asked to make this into an independent component. That's
+also a simple change:
+
+~~~ elixir
+defmodule FourOhFour do
+
+  use Component.Strategy.Global,
+      state_name:    :history,
+      initial_state: %{},
+      top_level:     true
+
+  one_way record_404(history, user, url) do
+    Map.update(history, user, [ url ], &[ url | &1 ])
+  end
+
+  two_way for_user(history, user) do
+    Map.get(history, user, [])
+  end
+end
+~~~
+
+The `top_level: true` parameter adds `Application` behaviour to this
+module and adds a top-level supervisor. Just add `mod: FourOhFour` to
+your `mix.exs` and your 404 logger will be started automatically when it
+is included in any other assembly.
+
+## So...
+
+Using the Component library has changed the way I write Elixir. I now
+break my code into lots of small components, each an Elixir/Erlang
+application). I then assemble these together using regular dependencies.
+(During development, when things are fluid, I use path dependencies.
+Later I may change these to git dependencies. I could also use hex.)
+
+I'd like to encourage you to think about your code the same way, as
+assemblies of simple components.
+
+I'd also like to hear your feedback. This is just an experiment: it's
+the starting point of an ongoing discussion. For now, let's use [the
+issues list](https://github.com/pragdave/component/issues) for this.
+
+I'll consider all this as time well spent if we manage to get people
+thinking about how they structure applications.
+
+And they all lived happily ever after.
+
+----
+
+# The Details
+
 ### Component Types
 
 We support a number of component types:
