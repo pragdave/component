@@ -244,7 +244,7 @@ defmodule Component.Strategy.Global do
   # given def fred(a, b) return { :fred, a, b } (in quoted form)
   @doc false
   def call_signature({ name, _, args }, options) do
-    no_state_args = args_without_state(args, options)
+    no_state_args = args_without_state_or_defaults(args, options)
     { :{}, [], [ name |  no_state_args ] }
   end
 
@@ -252,7 +252,9 @@ defmodule Component.Strategy.Global do
 
   @doc false
   def api_signature(options, { name, context, args }) do
-    { name, context, [ { state_name(options), [], nil } | args ] }
+    no_state_args = args_without_state_or_defaults(args, options)
+
+    { name, context, [ { state_name(options), [], nil } | no_state_args ] }
   end
 
   def args_without_state(args, options) do
@@ -261,6 +263,26 @@ defmodule Component.Strategy.Global do
     |> Enum.reject(fn { name, _, _ } -> name == state_name end)
     |> Enum.map(fn name -> var!(name) end)
   end
+
+  def args_without_state_or_defaults(args, options) do
+    args_without_state(args, options)
+    |> remove_any_default_values()
+  end
+
+  defp remove_any_default_values(args) do
+    args
+    |> Enum.map(&remove_one_default/1)
+  end
+
+  defp remove_one_default({ :\\, _, [ arg, _val ]}) do
+    arg
+  end
+
+  defp remove_one_default(arg) do
+    arg
+  end
+
+
 
   @doc false
   def service_name(options) do
