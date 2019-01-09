@@ -550,7 +550,7 @@ processing of items in the collection is automatically parallelized.
   Unlike the other components, you define the action to be taken on a
   member of the collection by writing a function called `process`. This
   can use pattern matching and guard clauses to vary the behaviour
-  depending on the vale passed in.
+  depending on the value passed in.
 
   You invoke the hungry component using
 
@@ -559,7 +559,7 @@ processing of items in the collection is automatically parallelized.
   ~~~
 
   By default, the results are returned as a list, where each entry is
-  the value of appling the processing to the corresponding value in the
+  the value of applying the processing to the corresponding value in the
   input collection. You can override this by providing an `into:` parameter.
 
   ~~~ elixir
