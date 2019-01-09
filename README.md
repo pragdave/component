@@ -1,6 +1,29 @@
-
-
 <img align="right" width="30%" alt="Image of jigsaw puzzle pieces" src="assets/logo-large.png"/>
+
+<!-- TOC -->
+
+- [Component](#component)
+  - [🗺 README Roadmap](#🗺-readme-roadmap)
+  - [Let's Grow a Service](#lets-grow-a-service)
+  - [The Start of a Moral](#the-start-of-a-moral)
+    - [Components and the 404 Logger](#components-and-the-404-logger)
+  - [So...](#so)
+- [The Details](#the-details)
+    - [Component Types](#component-types)
+      - [Global Components](#global-components)
+      - [Dynamic Components](#dynamic-components)
+      - [Pooled Components](#pooled-components)
+      - [Hungry Components](#hungry-components)
+    - [One and Two Way Functions](#one-and-two-way-functions)
+    - [State](#state)
+      - [Initial State](#initial-state)
+    - [Name Scope](#name-scope)
+    - [Component Lifecycle](#component-lifecycle)
+    - [Components as Top-Level Applications](#components-as-top-level-applications)
+    - [MISSING: event counter](#missing-event-counter)
+
+<!-- /TOC -->
+
 
 # Component
 
@@ -21,7 +44,7 @@ deployment support, statsd/telegraf compatible data collection on every
 request, shared logging, and world peace.
 -->
 
-> #### ⚠ Developer Health Warning ⚠
+> ### ⚠ Developer Health Warning ⚠
 >
 > The component library is a work in progress. It seems to work, but it
 > is not yet battle tested. As people play with it, we'll end up making
@@ -39,7 +62,7 @@ for the main course.
 
 Still here? Cool. Here's a story…
 
-# Let's Grow a Service
+## Let's Grow a Service
 
 Monday starts with a new user story. The UI folks want to keep a list of
 which users get "page not found" responses from our app. Someone else is
@@ -904,7 +927,7 @@ need to call their `create` function.
 Hungry components have no state, and do not need to be created or
 destroyed—this is handled automatically.
 
-## Components as Top-Level Applications
+### Components as Top-Level Applications
 
 Part of the impetus for creating this was to encourage folks to write
 single-responsibility components, one per mix project. To make this even

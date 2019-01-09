@@ -2,7 +2,8 @@ defmodule Component.Strategy.PreprocessorState do
 
   defstruct(
     functions:  [],     # the list of { call, body }s from each def
-    options:    []      # the options from `use`
+    options:    [],     # the options from `use`
+    callbacks:  nil     # callbacks to inject into the genserver
    )
 
 
@@ -39,6 +40,16 @@ defmodule Component.Strategy.PreprocessorState do
     Agent.update(name_for(name), fn state ->
       %{ state | functions: [ func | state.functions ] }
     end)
+  end
+
+  def add_callbacks(name, callbacks) do
+    Agent.update(name_for(name), fn state ->
+      %{ state | callbacks: callbacks }
+    end)
+  end
+
+  def get_callbacks(name) do
+    Agent.get(name_for(name), &(&1.callbacks))
   end
 
   def function_list(name) do

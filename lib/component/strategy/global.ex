@@ -116,7 +116,7 @@ defmodule Component.Strategy.Global do
     quote do
 
         import Component.Strategy.Common,
-               only: [ one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]
+               only: [ callbacks: 1, one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]
 
         @before_compile { unquote(__MODULE__), :generate_code_callback }
 
@@ -163,8 +163,6 @@ defmodule Component.Strategy.Global do
         # def server_opts() do
         #   unquote(server_opts)
         # end
-
-        # defoverridable [ initial_state: 2, init: 1 ]
       end
       |> Common.maybe_show_generated_code(opts)
     end
