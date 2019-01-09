@@ -18,6 +18,7 @@
     - [State](#state)
       - [Initial State](#initial-state)
     - [Name Scope](#name-scope)
+    - [GenServer Callbacks](#genserver-callbacks)
     - [Component Lifecycle](#component-lifecycle)
     - [Components as Top-Level Applications](#components-as-top-level-applications)
     - [MISSING: event counter](#missing-event-counter)
@@ -896,6 +897,49 @@ end
 
 However, as soon as this module threatens to become larger than a
 handful of lines I'll split it out into its own file.
+
+### GenServer Callbacks
+
+Regardless of the component type, the code you write in the `one_way`
+and `two_way` declarations ends up running in a GenServer. The Component
+library takes care of the housekeep, so you can normally just ignore all
+that. However, sometimes you need to be able to add code to the
+GenServer that Component generates for you. In particular, you may need
+to implement one or more of the GenServer callbacks (`code_change/3`,
+`format_status/2`, `handle_continue/2`, `handle_info/2`, `init/1`, and
+`terminate/2`).
+
+You do this by writing this code in a `callbacks` block. For example,
+here's a simple module that reports on how many times its
+`record_event/0` function is called in each 5 second period.
+
+~~~elixir
+defmodule Callbacks do
+
+  use Component.Strategy.Global,
+      top_level: true,
+      show_code: true,
+      state_name: :count,
+      initial_state: 0
+
+  one_way record_event() do
+    count + 1
+  end
+
+  callbacks do
+    def init(s) do
+      :timer.send_interval(5_000, :tick)
+      { :ok, s }
+    end
+
+    def handle_info(:tick, count) do
+      IO.puts "#{count} events in the last 5 seconds"
+      { :noreply, 0 }
+    end
+  end
+end
+~~~
+
 
 ### Component Lifecycle
 
