@@ -225,7 +225,7 @@ alternatives. It's a first try at a framework that guides us to
 think of our code as self-contained components. It does this by making
 components as easy to write and use as any other code.
 
-### Components ands the 404 Logger
+### Components and the 404 Logger
 
 Let's go back to the original 404 component. The initial implementation
 stays the same:
@@ -292,7 +292,7 @@ using a GenServer _cast_.
 A two-way function returns a value (and so is a GenServer _call_). Its
 return value is what is given back to the called of the API. If you
 don't need to update state, that's all you have to do. If you _do_ need
-to change the state as well as return a value, you can do it as well.
+to change the state as well as return a value, you can do that as well.
 
 Now the second code review asks for this to become a singleton named server. We
 sigh at the magnitude of the request and change the code:
