@@ -126,6 +126,7 @@ defmodule Component.Strategy.Dynamic do
     quote do
       import Component.Strategy.Common,
               only: [
+                callbacks:            1,
                 one_way:              2,
                 two_way:              2,
                 set_state_and_return: 1,
@@ -138,8 +139,7 @@ defmodule Component.Strategy.Dynamic do
       @name unquote(name)
 
       def initialize() do
-        Component.Strategy.Dynamic
-      .Supervisor.run(
+        Component.Strategy.Dynamic.Supervisor.run(
           worker_module: __MODULE__.Worker,
           name:          @name)
       end
@@ -149,13 +149,11 @@ defmodule Component.Strategy.Dynamic do
           __MODULE__.Worker,
           Common.derive_state(override_state, unquote(default_state)),
         }
-        Component.Strategy.Dynamic
-      .Supervisor.create(@name, spec)
+        Component.Strategy.Dynamic.Supervisor.create(@name, spec)
       end
 
       def destroy(worker) do
-        Component.Strategy.Dynamic
-      .Supervisor.destroy(@name, worker)
+        Component.Strategy.Dynamic.Supervisor.destroy(@name, worker)
       end
 
     end
@@ -165,10 +163,14 @@ defmodule Component.Strategy.Dynamic do
   @doc false
   defmacro generate_code(_) do
 
-    { options, apis, handlers, implementations, _delegators } =
-      Common.create_functions_from_originals(__CALLER__.module, __MODULE__)
+    caller_name = __CALLER__.module
 
-    PS.stop(__CALLER__.module)
+    { options, apis, handlers, implementations, _delegators } =
+      Common.create_functions_from_originals(caller_name, __MODULE__)
+
+    callbacks = PS.get_callbacks(caller_name)
+
+    PS.stop(caller_name)
 
     application = Common.maybe_create_application(options)
 
@@ -192,7 +194,12 @@ defmodule Component.Strategy.Dynamic do
           { :ok, state }
         end
 
+        defoverridable(init: 1)
+
+        unquote(callbacks)
+
         unquote_splicing(handlers)
+
         defmodule Implementation do
           unquote_splicing(implementations)
         end

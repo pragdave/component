@@ -111,6 +111,14 @@ defmodule Component.Strategy.Common do
     end
   end
 
+  @doc """
+  The functions in a `callbacks` block are injected into the genserver,
+  and so can be used for things such as `init/1` or `handle_info/2`.
+  """
+
+  defmacro callbacks(do: callback_code) do
+    PS.add_callbacks(__CALLER__.module, callback_code)
+  end
 
   # # The strategy is the module (Global, Dynamic, Pooled)
 
@@ -121,6 +129,8 @@ defmodule Component.Strategy.Common do
     { options, apis, handlers, implementations, _delegators } =
       create_functions_from_originals(caller, strategy)
 
+    callbacks = PS.get_callbacks(caller)
+
     PS.stop(caller)
 
     application = maybe_create_application(options)
@@ -129,6 +139,10 @@ defmodule Component.Strategy.Common do
       use GenServer
 
       unquote(application)
+
+      defoverridable(init: 1)
+
+      unquote(callbacks)
 
       unquote_splicing(apis)
       unquote_splicing(handlers)
