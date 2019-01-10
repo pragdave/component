@@ -53,7 +53,14 @@ defmodule Component.Strategy.Hungry do
   HungryAdderconsume(1..100)        #     [ 3, 6, 9, ... ]
   ~~~
   """
-  alias Component.Strategy.Common
+
+ ########################################################################
+ # Implementation note: This strategu is different enough from global   #
+ # and dynamic that it doesn't need to have the Strategy behaviour: it  #
+ # is totally self-contained.                                           #
+ ########################################################################
+
+
 
   defmacro __using__(opts \\ []) do
     generate_hungry_service(__CALLER__.module, opts)
