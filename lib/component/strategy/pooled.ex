@@ -134,7 +134,7 @@ defmodule Component.Strategy.Pooled do
 
     pooled = Component.Strategy.Pooled
 
-    PS.start_link(caller, opts)
+#    PS.start_link(caller, opts)
 
     quote do
       import Component.Strategy.Common,
@@ -176,35 +176,35 @@ defmodule Component.Strategy.Pooled do
   @doc false
   defmacro generate_code(_) do
 
-    { options, apis, handlers, implementations, _delegators } =
-      Common.create_functions_from_originals(__CALLER__.module, __MODULE__)
+    # { options, apis, handlers, implementations, _delegators } =
+    #   Common.create_functions_from_originals(__CALLER__.module, __MODULE__)
 
-    PS.stop(__CALLER__.module)
+    # PS.stop(__CALLER__.module)
 
-    quote do
+    # quote do
 
-      unquote_splicing(apis)
+    #   unquote_splicing(apis)
 
-      defmodule Worker do
-        use GenServer
+    #   defmodule Worker do
+    #     use GenServer
 
 
-        def start_link(args) do
-          GenServer.start_link(__MODULE__, args)
-        end
+    #     def start_link(args) do
+    #       GenServer.start_link(__MODULE__, args)
+    #     end
 
-        def init(state) do
-          { :ok, state }
-        end
+    #     def init(state) do
+    #       { :ok, state }
+    #     end
 
-        unquote_splicing(handlers)
-        defmodule Implementation do
-          unquote_splicing(implementations)
-        end
+    #     unquote_splicing(handlers)
+    #     defmodule Implementation do
+    #       unquote_splicing(implementations)
+    #     end
 
-      end
-    end
-    |> Common.maybe_show_generated_code(options)
+    #   end
+    # end
+    # |> Common.maybe_show_generated_code(options)
   end
 
   def generate_api_call(options, {one_or_two_way, call, _body}) do

@@ -121,7 +121,7 @@ defmodule Component.Strategy.Dynamic do
     name          = Keyword.get(opts, :service_name,  caller)
     default_state = Keyword.get(opts, :initial_state, :no_state)
 
-    PS.start_link(caller, opts)
+  #X#  PS.start_link(caller, opts)
 
     quote do
       import Component.Strategy.Common,
@@ -163,50 +163,50 @@ defmodule Component.Strategy.Dynamic do
   @doc false
   defmacro generate_code(_) do
 
-    caller_name = __CALLER__.module
+    # caller_name = __CALLER__.module
 
-    { options, apis, handlers, implementations, _delegators } =
-      Common.create_functions_from_originals(caller_name, __MODULE__)
+    # { options, apis, handlers, implementations, _delegators } =
+    #   Common.create_functions_from_originals(caller_name, __MODULE__)
 
-    callbacks = PS.get_callbacks(caller_name)
+    # callbacks = PS.get_callbacks(caller_name)
 
-    PS.stop(caller_name)
+    # PS.stop(caller_name)
 
-    application = Common.maybe_create_application(options)
+    # application = Common.maybe_create_application(options)
 
-    quote do
-      unquote(application)
-      unquote_splicing(apis)
+    # quote do
+    #   unquote(application)
+    #   unquote_splicing(apis)
 
-      def wrapped_create() do
-        initialize()
-      end
+    #   def wrapped_create() do
+    #     initialize()
+    #   end
 
-      defmodule Worker do
-        use GenServer
+    #   defmodule Worker do
+    #     use GenServer
 
 
-        def start_link(args) do
-          GenServer.start_link(__MODULE__, args)
-        end
+    #     def start_link(args) do
+    #       GenServer.start_link(__MODULE__, args)
+    #     end
 
-        def init(state) do
-          { :ok, state }
-        end
+    #     def init(state) do
+    #       { :ok, state }
+    #     end
 
-        defoverridable(init: 1)
+    #     defoverridable(init: 1)
 
-        unquote(callbacks)
+    #     unquote(callbacks)
 
-        unquote_splicing(handlers)
+    #     unquote_splicing(handlers)
 
-        defmodule Implementation do
-          unquote_splicing(implementations)
-        end
+    #     defmodule Implementation do
+    #       unquote_splicing(implementations)
+    #     end
 
-      end
-    end
-    |> Common.maybe_show_generated_code(options)
+    #   end
+    # end
+    # |> Common.maybe_show_generated_code(options)
   end
 
   def generate_api_call(options, {one_or_two_way, call, _body}) do

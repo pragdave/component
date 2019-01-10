@@ -1,5 +1,6 @@
 defmodule Component.Strategy.Common do
 
+
   alias Component.Strategy.PreprocessorState, as: PS
 
   @moduledoc false
@@ -124,60 +125,37 @@ defmodule Component.Strategy.Common do
 
 
   @doc false
-  def generate_code(caller, strategy) do
+#   def generate_code(caller, strategy) do
 
-    { options, apis, handlers, implementations, _delegators } =
-      create_functions_from_originals(caller, strategy)
+# #X#    { options, apis, handlers, implementations, _delegators } =
+# #X#      create_functions_from_originals(caller, strategy)
 
-    callbacks = PS.get_callbacks(caller)
+#     callbacks = PS.get_callbacks(caller)
 
-    PS.stop(caller)
+#     PS.stop(caller)
 
-    application = maybe_create_application(options)
+#     application = maybe_create_application(options)
 
-    quote do
-      use GenServer
+#     quote do
+#       use GenServer
 
-      unquote(application)
+#       unquote(application)
 
-      defoverridable(init: 1)
+#       defoverridable(init: 1)
 
-      unquote(callbacks)
+#       unquote(callbacks)
 
-      unquote_splicing(apis)
-      unquote_splicing(handlers)
-      defmodule Implementation do
-        unquote_splicing(implementations)
-      end
-    end
-    |> maybe_show_generated_code(options)
-  end
+#       unquote_splicing(apis)
+#       unquote_splicing(handlers)
+#       defmodule Implementation do
+#         unquote_splicing(implementations)
+#       end
+#     end
+#     |> maybe_show_generated_code(options)
+#   end
 
   @doc false
-  def create_functions_from_originals(caller, strategy) do
-    options = PS.options(caller)
 
-    PS.function_list(caller)
-    |> Enum.reduce({nil, [], [], [], []}, &generate_functions(strategy, options, &1, &2))
-  end
-
-
-  @doc !"public only for testing"
-  def generate_functions(
-    strategy,
-    options,
-    original_fn,
-    {_, apis, handlers, impls, delegators}
-  )
-    do
-    {
-      options,
-      [ strategy.generate_api_call(options, original_fn)       | apis       ],
-      [ strategy.generate_handle_call(options, original_fn)    | handlers   ],
-      [ strategy.generate_implementation(options, original_fn) | impls      ],
-      [ strategy.generate_delegator(options, original_fn)      | delegators ]
-    }
-  end
 
   def maybe_create_application(options) do
     if options[:top_level] do
@@ -207,19 +185,7 @@ defmodule Component.Strategy.Common do
     { :reply, result, state }
   end
 
-  @doc false
-  def maybe_show_generated_code(code, opts) do
-    if opts[:show_code] do
-      IO.puts ""
-      code
-      |> Macro.to_string()
-      |> String.replace(~r{^\w*\(}, "")
-      |> String.replace(~r{\)\w*$}, "")
-      |> String.replace(~r{def\((.*?)\)\)}, "def \\1)")
-      |> IO.puts
-    end
-    code
-  end
+
 
   @doc """
   The create call accepts an optional state. A component can also have a

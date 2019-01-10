@@ -86,93 +86,97 @@ defmodule Component.Strategy.Global do
 
   """
 
-
+  alias   Component.Strategy
   alias   Component.Strategy.Common
-  alias   Component.Strategy.PreprocessorState, as: PS
   require Common
+
+  @behaviour Strategy
 
   @doc false
   defmacro __using__(opts \\ []) do
-    generate_global_service(__CALLER__.module, opts)
+    Strategy.handle_using(opts, __CALLER__.module, __MODULE__)
+#    generate_global_service(__CALLER__.module, opts)
   end
 
-  @doc false
-  def generate_global_service(caller, opts) do
-    name          = Keyword.get(opts, :service_name,  caller)
-    default_state = Keyword.get(opts, :initial_state, :no_state)
+  @doc """
+  Called from Strategy.parse_options to parse additional options
+  specific to this strategy.
+  """
+  @spec parse_options(Map.t, Keyword.t, atom) :: Map.t
+  def parse_options(options_so_far, options_from_using, target_module) do
+    service_name = Keyword.get(options_from_using, :service_name, target_module)
+    options_so_far
+    |> Map.put(:service_name, service_name)
+  end
 
-    PS.start_link(caller, opts)
+  @doc """
+  Generate the code for a Global server.
+  """
 
-    name_opt = quote do: { :via, :global, unquote(name) }
+  @impl Strategy
+  @spec emit_code(functions :: map, target_module :: atom, options :: map ) :: Strategy.quoted_code
 
-    server_opts = if name do
-        quote do
-          [ name: unquote(name_opt) ]
-        end
-      else
-         [ ]
-      end
+  def emit_code(generated, target_module, options) do
 
-    quote do
+    service_name = options.service_name
 
-        import Component.Strategy.Common,
-               only: [ callbacks: 1, one_way: 2, two_way: 2, set_state_and_return: 1, set_state: 2 ]
-
-        @before_compile { unquote(__MODULE__), :generate_code_callback }
-
-        @doc """
-        This is a simple flag function that identifies this module
-        as implementing a component.
-        """
-
-        def unquote(Component.info_function_name())() do
-          %{
-            strategy: unquote(__MODULE__),
-            name:     unquote(name),
-            opts:     unquote(opts),
-          }
-        end
-
-        def create() do
-          create(unquote(default_state))
-        end
-
-        def create(state) do
-          { :ok, pid } = GenServer.start_link(__MODULE__, state, unquote(server_opts))
-          pid
-        end
-
-        # the normal api removes the :ok, but we need it when starting
-        # under a supervisor
-        def wrapped_create() do
-          { :ok, create() }
-        end
-
-        def destroy() do
-          GenServer.stop(unquote(name_opt))
-        end
-
-        def start_link(state_override) do
-          { :ok, create(state_override) }
-        end
-
-        def init(state) do
-          { :ok, state }
-        end
-
-        # def server_opts() do
-        #   unquote(server_opts)
-        # end
-      end
-      |> Common.maybe_show_generated_code(opts)
+    name_opt = quote do: { :via, :global, unquote(service_name) }
+    server_opts = quote do
+      [ name: unquote(name_opt) ]
     end
 
-  @doc false
-  defmacro generate_code_callback(_module_env) do
-    Common.generate_code(__CALLER__.module, __MODULE__)
+    application = Strategy.maybe_create_application(options)
+
+    quote do
+      use GenServer
+
+      unquote(application)
+
+      def create() do
+        create(unquote(options.initial_state))
+      end
+
+      def create(state) do
+        { :ok, pid } = GenServer.start_link(__MODULE__, state, unquote(server_opts))
+        pid
+      end
+
+      # the normal api removes the :ok, but we need it when starting
+      # under a supervisor
+      def wrapped_create() do
+        { :ok, create() }
+      end
+
+      def destroy() do
+        GenServer.stop(unquote(name_opt))
+      end
+
+      def start_link(state_override) do
+        { :ok, create(state_override) }
+      end
+
+      def init(state) do
+        { :ok, state }
+      end
+
+      defoverridable(init: 1)
+
+      unquote(generated.callbacks)
+
+      unquote_splicing(generated.apis)
+
+      unquote_splicing(generated.handlers)
+
+      defmodule Implementation do
+        unquote_splicing(generated.implementations)
+      end
+
+    end
   end
 
+
   @doc false
+  @impl Strategy
   def generate_api_call(options, {one_or_two_way, call, _body}) do
     { name, context, args } = call
     call = { name, context, args_without_state(args, options) }
@@ -193,6 +197,7 @@ defmodule Component.Strategy.Global do
   defp invocation(:two_way), do: :call
 
   @doc false
+  @impl Strategy
   def generate_handle_call(options, { one_or_two_way, call, _body}) do
     request  = call_signature(call, options)
     api_call = api_signature(options, call)
@@ -223,6 +228,7 @@ defmodule Component.Strategy.Global do
   end
 
   @doc false
+  @impl Strategy
   def generate_implementation(options, {_one_or_two_way, call, do: body}) do
     fix_warning = quote do
       _ = var!(unquote({ state_name(options), [], Elixir }))
@@ -236,6 +242,7 @@ defmodule Component.Strategy.Global do
 
   # only used for pools
   @doc false
+  @impl Strategy
   def generate_delegator(_options, {_one_or_two_way, _call, _body}), do: nil
 
 
@@ -283,12 +290,12 @@ defmodule Component.Strategy.Global do
 
 
   @doc false
-  def service_name(options) do
+  defp service_name(options) do
     options[:service_name] || quote(do: __MODULE__)
   end
 
   @doc false
-  def state_name(options) do
+  defp state_name(options) do
     check_state_name(options[:state_name])
   end
 
