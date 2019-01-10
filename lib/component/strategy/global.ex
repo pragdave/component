@@ -103,10 +103,8 @@ defmodule Component.Strategy.Global do
   """
   @impl Strategy
   @spec parse_options(Map.t, Keyword.t, atom) :: Map.t
-  def parse_options(options_so_far, options_from_using, target_module) do
-    service_name = Keyword.get(options_from_using, :service_name, target_module)
+  def parse_options(options_so_far, _options_from_using, _target_module) do
     options_so_far
-    |> Map.put(:service_name, service_name)
   end
 
   @doc """
@@ -170,7 +168,6 @@ defmodule Component.Strategy.Global do
       defmodule Implementation do
         unquote_splicing(generated.implementations)
       end
-
     end
   end
 

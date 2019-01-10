@@ -125,10 +125,8 @@ defmodule Component.Strategy.Dynamic do
   """
   @impl Strategy
   @spec parse_options(Map.t, Keyword.t, atom) :: Map.t
-  def parse_options(options_so_far, options_from_using, target_module) do
-    service_name = Keyword.get(options_from_using, :service_name, target_module)
+  def parse_options(options_so_far, _options_from_using, _target_module) do
     options_so_far
-    |> Map.put(:service_name, service_name)
   end
 
   @impl Strategy
@@ -168,51 +166,29 @@ defmodule Component.Strategy.Dynamic do
       unquote_splicing(generated.apis)
 
 
-        defmodule Worker do
-          use GenServer
+      defmodule Worker do
+        use GenServer
 
 
-          def start_link(args) do
-            GenServer.start_link(__MODULE__, args)
-          end
-
-          def init(state) do
-            { :ok, state }
-          end
-
-          defoverridable(init: 1)
-
-          unquote(generated.callbacks)
-
-          unquote_splicing(generated.handlers)
-
-          defmodule Implementation do
-            unquote_splicing(generated.implementations)
-          end
-
+        def start_link(args) do
+          GenServer.start_link(__MODULE__, args)
         end
 
+        def init(state) do
+          { :ok, state }
+        end
+
+        defoverridable(init: 1)
+
+        unquote(generated.callbacks)
+
+        unquote_splicing(generated.handlers)
+
+        defmodule Implementation do
+          unquote_splicing(generated.implementations)
+        end
+      end
     end
-  end
-
-  @doc false
-  defmacro generate_code(_) do
-
-    # caller_name = __CALLER__.module
-
-    # { options, apis, handlers, implementations, _delegators } =
-    #   Common.create_functions_from_originals(caller_name, __MODULE__)
-
-    # callbacks = PS.get_callbacks(caller_name)
-
-    # PS.stop(caller_name)
-
-    # application = Common.maybe_create_application(options)
-
-    # quote do
-    #
-    # end
-    # |> Common.maybe_show_generated_code(options)
   end
 
   # Prepend `worker_pid` to the calling sequence of a function
@@ -291,7 +267,5 @@ defmodule Component.Strategy.Dynamic do
       def(unquote(args_with_pid), do: unquote(api_body(one_or_two_way, options, call)))
     end
   end
-
-
 
 end

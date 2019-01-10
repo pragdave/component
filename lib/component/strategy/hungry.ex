@@ -87,6 +87,5 @@ defmodule Component.Strategy.Hungry do
         end
       end
     end
-    |> Common.maybe_show_generated_code(opts)
   end
 end

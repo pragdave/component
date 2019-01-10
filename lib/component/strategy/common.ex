@@ -264,5 +264,4 @@ defmodule Component.Strategy.Common do
   end
 
 
-
 end

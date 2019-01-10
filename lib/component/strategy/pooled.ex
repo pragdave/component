@@ -67,7 +67,7 @@ defmodule Component.Strategy.Pooled do
 
   You can pass a keyword list to `use Component.Strategy.Pooled:`
 
-  * `state:` _value_
+  * `initial_state:` _value_
 
     The default value for the initial state of all workers. Can be
     overridden (again for all workers) by passing a value to
@@ -81,7 +81,7 @@ defmodule Component.Strategy.Pooled do
     `recognize` function your could write `options.algorithm` to look up
     the algorithm to use.
 
-  * `name:` _atom_
+  * `service_name:` _atom_
 
     The default name for the pool is the name of the module that defines
     it. Use `name:` to change this.
@@ -118,45 +118,50 @@ defmodule Component.Strategy.Pooled do
 
   """
 
+  alias Component.Strategy
+  alias Component.Strategy.{ Common, Dynamic }
 
-  alias Component.Strategy.PreprocessorState, as: PS
-  alias Component.Strategy.{Common, Dynamic, Global}
+  @behaviour Strategy
 
   @doc false
   defmacro __using__(opts \\ []) do
-    generate_pooled_service(__CALLER__.module, opts)
+    Strategy.handle_using(opts, __CALLER__.module, __MODULE__)
   end
 
-  @doc false
-  def generate_pooled_service(caller, opts) do
-    name  = Keyword.get(opts, :service_name,  :no_name)
-    default_state = Keyword.get(opts, :initial_state, :no_state)
+  @doc """
+  Called from Strategy.parse_options to parse additional options
+  specific to this strategy.
+  """
+  @impl Strategy
+  @spec parse_options(Map.t, Keyword.t, atom) :: Map.t
+  def parse_options(options_so_far, options_from_using, _target_module) do
+    pool    = Keyword.get(options_from_using, :pool, [ min: 1, max: 2 ])
+    options_so_far
+    |> Map.put(:pool, pool)
+  end
 
+
+  @doc """
+  Generate the code for a Global server.
+  """
+
+  @impl Strategy
+  @spec emit_code(functions :: map, target_module :: atom, options :: map ) :: Strategy.quoted_code
+
+  def emit_code(generated, _target_module, options) do
     pooled = Component.Strategy.Pooled
 
-#    PS.start_link(caller, opts)
-
     quote do
-      import Component.Strategy.Common,
-              only: [
-                one_way:              2,
-                two_way:              2,
-                set_state_and_return: 1,
-                set_state:            2
-              ]
-
-      @before_compile { unquote(__MODULE__), :generate_code }
-
-      @name unquote(name)
+      @name unquote(options.service_name)
 
       def initialize() do
-        initialize(unquote(default_state))
+        initialize(unquote(options.initial_state))
       end
 
       def initialize(state) do
         unquote(pooled).Scheduler.start_new_pool(
           worker_module: __MODULE__.Worker,
-          pool_opts:     unquote(opts[:pool] || [ min: 1, max: 4]),
+          pool_opts:     unquote(options.pool),
           name:          @name,
           state:         state)
       end
@@ -169,104 +174,52 @@ defmodule Component.Strategy.Pooled do
         unquote(pooled).Scheduler.checkin(@name, worker)
       end
 
+      unquote_splicing(generated.apis)
+
+      defmodule Worker do
+        use GenServer
+
+
+        def start_link(args) do
+          GenServer.start_link(__MODULE__, args)
+        end
+
+        def init(state) do
+          { :ok, state }
+        end
+
+        unquote_splicing(generated.handlers)
+        defmodule Implementation do
+          unquote_splicing(generated.implementations)
+        end
+
+      end
     end
-    |> Common.maybe_show_generated_code(opts)
   end
 
-  @doc false
-  defmacro generate_code(_) do
 
-    # { options, apis, handlers, implementations, _delegators } =
-    #   Common.create_functions_from_originals(__CALLER__.module, __MODULE__)
-
-    # PS.stop(__CALLER__.module)
-
-    # quote do
-
-    #   unquote_splicing(apis)
-
-    #   defmodule Worker do
-    #     use GenServer
-
-
-    #     def start_link(args) do
-    #       GenServer.start_link(__MODULE__, args)
-    #     end
-
-    #     def init(state) do
-    #       { :ok, state }
-    #     end
-
-    #     unquote_splicing(handlers)
-    #     defmodule Implementation do
-    #       unquote_splicing(implementations)
-    #     end
-
-    #   end
-    # end
-    # |> Common.maybe_show_generated_code(options)
-  end
-
+ #############################
+ # Function code generators  #
+ #############################
+  @impl Strategy
   def generate_api_call(options, {one_or_two_way, call, _body}) do
     args_with_pid = signature_with_pid(call, options)
     quote do
-      def(unquote(args_with_pid), do: unquote(api_body(one_or_two_way, options, call)))
+      def(unquote(args_with_pid), do: unquote(Dynamic.api_body(one_or_two_way, options, call)))
     end
   end
 
-  # Prepend `worker_pid` to the calling sequence of a function
-  # definition
-  defp signature_with_pid({ name, context, args }, options) do
-    args = Global.args_without_state(args, options)
-    { name, context, [ { :worker_pid, [line: 1], nil } | args ]}
-  end
-
-  defdelegate api_body(one_or_two_way, options, call), to: Dynamic
-  # @doc false
-  # defp api_body(one_or_two_way, _options, call) do
-  #   request = call_signature(call)
-  #   pid_var = { :worker_pid, [], nil }
-  #   quote do
-  #     GenServer.unquote(invocation(one_or_two_way))(unquote(pid_var), unquote(request))
-  #   end
-  # end
-
-    #@doc false
-    # defp api_body(:one_way, options, call) do
-    #   request = Global.call_signature(call, options)
-    #   pid_var = { :worker_pid, [], nil }
-    #   quote do
-    #     GenServer.cast(unquote(pid_var), unquote(request))
-    #   end
-    # end
-
-
-    # defp api_body(:two_way, options, call) do
-    #   request = Global.call_signature(call, options)
-    #   pid_var = { :worker_pid, [], nil }
-    #   quote do
-    #     GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
-    #   end
-    # end
-
-  # given def fred(a, b) return { :fred, a, b }
-  @doc false
-  def call_signature({ name, _, args }) do
-    args = args |> Enum.map(fn name -> var!(name) end)
-    { :{}, [], [ name |  args ] }
-  end
-
-
-  # defp invocation(:one_way), do: :cast
-  # defp invocation(:two_way), do: :call
-
 
   @doc false
-  defdelegate generate_handle_call(options,function),    to: Global
-  @doc false
-  defdelegate generate_implementation(options,function), to: Global
+  @impl Strategy
+  defdelegate generate_handle_call(options,function),    to: Strategy
 
   @doc false
+  @impl Strategy
+  defdelegate generate_implementation(options,function), to: Strategy
+
+  @doc false
+  @impl Strategy
   def generate_delegator(options, {_one_or_two_way, call, _body}) do
     quote do
       def unquote(call), do: unquote(delegate_body(options, call))
@@ -274,10 +227,17 @@ defmodule Component.Strategy.Pooled do
   end
 
 
+  # Prepend `worker_pid` to the calling sequence of a function
+  # definition
+  defp signature_with_pid({ name, context, args }, options) do
+    args = Common.args_without_state(args, options)
+    { name, context, [ { :worker_pid, [line: 1], nil } | args ]}
+  end
+
   @doc false
-  def delegate_body(options, call) do
+  defp delegate_body(options, call) do
     timeout = options[:timeout] || 5000
-    request = Global.call_signature(call, options)
+    request = Common.call_signature(call, options)
     quote do
       Component.Scheduler.run(@name, unquote(request), unquote(timeout))
     end
