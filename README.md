@@ -14,6 +14,7 @@
       - [Dynamic Components](#dynamic-components)
       - [Pooled Components](#pooled-components)
       - [Hungry Components](#hungry-components)
+    - [Choosing a Component Type](#choosing-a-component-type)
     - [One and Two Way Functions](#one-and-two-way-functions)
     - [State](#state)
       - [Initial State](#initial-state)
@@ -590,6 +591,35 @@ processing of items in the collection is automatically parallelized.
   ~~~
 
 
+### Choosing a Component Type
+
+It's all about the state. _Shared_ state.
+
+If you don't to share your state with anybody. Then good news,
+you don't need processes and you don't need this library (for now).
+You will live a happier life than the rest of us.
+
+Is there a single state shared between all users of your component (for
+example, it acts as a registry, logger, or other singleton resource)? If
+so, you need a _global component_.
+
+Does your component maintain state across multiple calls, and do you
+need multiple versions of that state? For example, are you representing
+a user session, or the state of games being played? If so, use a
+_dynamic component_, where each component maintains state for the
+session/game/....
+
+Do you have a limited set of external resources that you need to share
+across your application (for example, database connections, access to
+rate-limited services, and so on)? If so, use a _pooled component_,
+where each component's state represents one of the external resources,
+and each time you call a component you claim that resource for the
+duration of the call.
+
+Do you have work that needs doing against a collection of data (for
+example, analyzing a bunch of images, reducing a large amount of data
+statistically, or other large-scale data mapping operations)? If so, use
+the _hungry component_, which holds no state between calls.
 
 
 ### One and Two Way Functions
