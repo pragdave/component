@@ -124,56 +124,40 @@ defmodule Component.Strategy.Common do
   # # The strategy is the module (Global, Dynamic, Pooled)
 
 
-  @doc false
-#   def generate_code(caller, strategy) do
+#   @doc false
+# #   def generate_code(caller, strategy) do
 
-# #X#    { options, apis, handlers, implementations, _delegators } =
-# #X#      create_functions_from_originals(caller, strategy)
+# # #X#    { options, apis, handlers, implementations, _delegators } =
+# # #X#      create_functions_from_originals(caller, strategy)
 
-#     callbacks = PS.get_callbacks(caller)
+# #     callbacks = PS.get_callbacks(caller)
 
-#     PS.stop(caller)
+# #     PS.stop(caller)
 
-#     application = maybe_create_application(options)
+# #     application = maybe_create_application(options)
 
-#     quote do
-#       use GenServer
+# #     quote do
+# #       use GenServer
 
-#       unquote(application)
+# #       unquote(application)
 
-#       defoverridable(init: 1)
+# #       defoverridable(init: 1)
 
-#       unquote(callbacks)
+# #       unquote(callbacks)
 
-#       unquote_splicing(apis)
-#       unquote_splicing(handlers)
-#       defmodule Implementation do
-#         unquote_splicing(implementations)
-#       end
-#     end
-#     |> maybe_show_generated_code(options)
-#   end
+# #       unquote_splicing(apis)
+# #       unquote_splicing(handlers)
+# #       defmodule Implementation do
+# #         unquote_splicing(implementations)
+# #       end
+# #     end
+# #     |> maybe_show_generated_code(options)
+# #   end
 
-  @doc false
+#   @doc false
 
 
-  def maybe_create_application(options) do
-    if options[:top_level] do
-      quote do
-        use Application
-        def start(_type, _args) do
-          children = [ %{
-            id:     __MODULE__.Id,
-            start: { __MODULE__, :wrapped_create, [] }
-           }]
-          opts = [strategy: :one_for_one, name: __MODULE__.Supervisor]
-          IO.inspect Supervisor.start_link(children, opts)
-        end
-      end
-    else
-      nil
-    end
-  end
+
 
   @doc !"public only for testing"
   def create_genserver_response(response = {:reply, _, _}, _state) do
@@ -231,6 +215,54 @@ defmodule Component.Strategy.Common do
   def derive_state(overrides, _default_state) do
     overrides
   end
+
+
+
+
+
+  def args_without_state(args, options) do
+    state_name = state_name(options)
+    args
+    |> Enum.reject(fn { name, _, _ } -> name == state_name end)
+    |> Enum.map(fn name -> var!(name) end)
+  end
+
+  def args_without_state_or_defaults(args, options) do
+    args_without_state(args, options)
+    |> remove_any_default_values()
+  end
+
+  defp remove_any_default_values(args) do
+    args
+    |> Enum.map(&remove_one_default/1)
+  end
+
+  defp remove_one_default({ :\\, _, [ arg, _val ]}), do: arg
+  defp remove_one_default(arg),                      do: arg
+
+
+    @doc false
+    def state_name(options) do
+      check_state_name(options[:state_name])
+    end
+
+    defp check_state_name(nil), do: :state
+    defp check_state_name(name) when is_atom(name), do: name
+    defp check_state_name({name, _, _}) do
+      raise CompileError, description: "state_name: “#{name}” should be an atom, not a variable"
+    end
+    defp check_state_name(name) do
+      raise CompileError, description: "state_name: “#{inspect name}” should be an atom"
+    end
+
+
+  # given def fred(a, b) return { :fred, a, b } (in quoted form)
+  @doc false
+  def call_signature({ name, _, args }, options) do
+    no_state_args = args_without_state_or_defaults(args, options)
+    { :{}, [], [ name |  no_state_args ] }
+  end
+
 
 
 end

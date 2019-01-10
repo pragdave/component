@@ -106,37 +106,40 @@ defmodule Component.Strategy.Dynamic do
 
   """
 
+  alias Component.Strategy
 
-  alias Component.Strategy.PreprocessorState, as: PS
-  alias Component.Strategy.{Common, Global}
+  alias Component.Strategy.Common
   alias Common.CommonAttribute, as: CA
+
+  @behaviour Strategy
+
 
   @doc false
   defmacro __using__(opts \\ []) do
-    generate_named_service(__CALLER__.module, opts)
+    Strategy.handle_using(opts, __CALLER__.module, __MODULE__)
   end
 
-  @doc false
-  def generate_named_service(caller, opts) do
-    name          = Keyword.get(opts, :service_name,  caller)
-    default_state = Keyword.get(opts, :initial_state, :no_state)
+  @doc """
+  Called from Strategy.parse_options to parse additional options
+  specific to this strategy.
+  """
+  @impl Strategy
+  @spec parse_options(Map.t, Keyword.t, atom) :: Map.t
+  def parse_options(options_so_far, options_from_using, target_module) do
+    service_name = Keyword.get(options_from_using, :service_name, target_module)
+    options_so_far
+    |> Map.put(:service_name, service_name)
+  end
 
-  #X#  PS.start_link(caller, opts)
+  @impl Strategy
+  @spec emit_code(functions :: map, target_module :: atom, options :: map ) :: Strategy.quoted_code
+
+  def emit_code(generated, _target_module, options) do
+
+    application = Strategy.maybe_create_application(options)
 
     quote do
-      import Component.Strategy.Common,
-              only: [
-                callbacks:            1,
-                one_way:              2,
-                two_way:              2,
-                set_state_and_return: 1,
-                set_state:            2
-              ]
-
-
-      @before_compile { unquote(__MODULE__), :generate_code }
-
-      @name unquote(name)
+      @name unquote(options.service_name)
 
       def initialize() do
         Component.Strategy.Dynamic.Supervisor.run(
@@ -147,17 +150,49 @@ defmodule Component.Strategy.Dynamic do
       def create(override_state \\ CA.no_overrides)  do
         spec = {
           __MODULE__.Worker,
-          Common.derive_state(override_state, unquote(default_state)),
+          Common.derive_state(override_state, unquote(options.initial_state)),
         }
         Component.Strategy.Dynamic.Supervisor.create(@name, spec)
+      end
+
+      def wrapped_create() do
+        initialize()
       end
 
       def destroy(worker) do
         Component.Strategy.Dynamic.Supervisor.destroy(@name, worker)
       end
 
+      unquote(application)
+
+      unquote_splicing(generated.apis)
+
+
+        defmodule Worker do
+          use GenServer
+
+
+          def start_link(args) do
+            GenServer.start_link(__MODULE__, args)
+          end
+
+          def init(state) do
+            { :ok, state }
+          end
+
+          defoverridable(init: 1)
+
+          unquote(generated.callbacks)
+
+          unquote_splicing(generated.handlers)
+
+          defmodule Implementation do
+            unquote_splicing(generated.implementations)
+          end
+
+        end
+
     end
-    |> Common.maybe_show_generated_code(opts)
   end
 
   @doc false
@@ -175,57 +210,21 @@ defmodule Component.Strategy.Dynamic do
     # application = Common.maybe_create_application(options)
 
     # quote do
-    #   unquote(application)
-    #   unquote_splicing(apis)
-
-    #   def wrapped_create() do
-    #     initialize()
-    #   end
-
-    #   defmodule Worker do
-    #     use GenServer
-
-
-    #     def start_link(args) do
-    #       GenServer.start_link(__MODULE__, args)
-    #     end
-
-    #     def init(state) do
-    #       { :ok, state }
-    #     end
-
-    #     defoverridable(init: 1)
-
-    #     unquote(callbacks)
-
-    #     unquote_splicing(handlers)
-
-    #     defmodule Implementation do
-    #       unquote_splicing(implementations)
-    #     end
-
-    #   end
+    #
     # end
     # |> Common.maybe_show_generated_code(options)
-  end
-
-  def generate_api_call(options, {one_or_two_way, call, _body}) do
-    args_with_pid = signature_with_pid(call, options)
-    quote do
-      def(unquote(args_with_pid), do: unquote(api_body(one_or_two_way, options, call)))
-    end
   end
 
   # Prepend `worker_pid` to the calling sequence of a function
   # definition
   defp signature_with_pid({ name, context, args }, options) do
-    args = Global.args_without_state(args, options)
+    args = Common.args_without_state(args, options)
     { name, context, [ { :worker_pid, [line: 1], nil } | args ]}
   end
 
   @doc false
   def api_body(:one_way, options, call) do
-    request = Global.call_signature(call, options)
+    request = Common.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
       GenServer.cast(unquote(pid_var), unquote(request))
@@ -234,21 +233,12 @@ defmodule Component.Strategy.Dynamic do
 
 
   def api_body(:two_way, options, call) do
-    request = Global.call_signature(call, options)
+    request = Common.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
       GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
     end
   end
-
-  # given def fred(a, b) return { :fred, a, b }
-  @doc false
-  # def call_signature({ name, _, args }, options) do
-  #   args
-  #   |> Global.args_without_state(options)
-  #   |> Enum.map(fn name -> var!(name) end)
-  #   { :{}, [], [ name |  args ] }
-  # end
 
 
   defp genserver_timeout(options) do
@@ -264,27 +254,44 @@ defmodule Component.Strategy.Dynamic do
     end
   end
 
-  @doc false
-  defdelegate generate_handle_call(options,function),    to: Global
-  @doc false
-  defdelegate generate_implementation(options,function), to: Global
 
   @doc false
+  def delegate_body(options, call) do
+    timeout = options[:timeout] || 5000
+    request = Common.call_signature(call, options)
+    quote do
+      Component.Scheduler.run(@name, unquote(request), unquote(timeout))
+    end
+  end
+
+ ######################################
+ # The function generation callbacks  #
+ ######################################
+
+  @doc false
+  @impl Strategy
+  defdelegate generate_handle_call(options,function),    to: Strategy
+
+  @doc false
+  @impl Strategy
+  defdelegate generate_implementation(options,function), to: Strategy
+
+  @doc false
+  @impl Strategy
   def generate_delegator(options, {_one_or_two_way, call, _body}) do
     quote do
       def unquote(call), do: unquote(delegate_body(options, call))
     end
   end
 
-
-  @doc false
-  def delegate_body(options, call) do
-    timeout = options[:timeout] || 5000
-    request = Global.call_signature(call, options)
+  @impl Strategy
+  def generate_api_call(options, {one_or_two_way, call, _body}) do
+    args_with_pid = signature_with_pid(call, options)
     quote do
-      Component.Scheduler.run(@name, unquote(request), unquote(timeout))
+      def(unquote(args_with_pid), do: unquote(api_body(one_or_two_way, options, call)))
     end
   end
+
 
 
 end

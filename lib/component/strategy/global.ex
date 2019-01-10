@@ -95,13 +95,13 @@ defmodule Component.Strategy.Global do
   @doc false
   defmacro __using__(opts \\ []) do
     Strategy.handle_using(opts, __CALLER__.module, __MODULE__)
-#    generate_global_service(__CALLER__.module, opts)
   end
 
   @doc """
   Called from Strategy.parse_options to parse additional options
   specific to this strategy.
   """
+  @impl Strategy
   @spec parse_options(Map.t, Keyword.t, atom) :: Map.t
   def parse_options(options_so_far, options_from_using, target_module) do
     service_name = Keyword.get(options_from_using, :service_name, target_module)
@@ -116,7 +116,7 @@ defmodule Component.Strategy.Global do
   @impl Strategy
   @spec emit_code(functions :: map, target_module :: atom, options :: map ) :: Strategy.quoted_code
 
-  def emit_code(generated, target_module, options) do
+  def emit_code(generated, _target_module, options) do
 
     service_name = options.service_name
 
@@ -179,7 +179,7 @@ defmodule Component.Strategy.Global do
   @impl Strategy
   def generate_api_call(options, {one_or_two_way, call, _body}) do
     { name, context, args } = call
-    call = { name, context, args_without_state(args, options) }
+    call = { name, context, Common.args_without_state(args, options) }
     quote do
       def(unquote(call), do: unquote(api_body(one_or_two_way, options, call)))
     end
@@ -187,7 +187,7 @@ defmodule Component.Strategy.Global do
 
   @doc false
   defp api_body(one_or_two_way, options, call) do
-    request = call_signature(call, options)
+    request = Common.call_signature(call, options)
     quote do
       GenServer.unquote(invocation(one_or_two_way))({ :via, :global, unquote(service_name(options)) }, unquote(request))
     end
@@ -196,49 +196,14 @@ defmodule Component.Strategy.Global do
   defp invocation(:one_way), do: :cast
   defp invocation(:two_way), do: :call
 
-  @doc false
-  @impl Strategy
-  def generate_handle_call(options, { one_or_two_way, call, _body}) do
-    request  = call_signature(call, options)
-    api_call = api_signature(options, call)
-    state_var = { state_name(options), [], nil }
-
-    call_or_cast(one_or_two_way, request, state_var, api_call)
-  end
-
-  defp call_or_cast(:one_way, request, state_var, api_call) do
-    quote do
-      def handle_cast(unquote(request), șțąțɇ) do
-        unquote(state_var) = șțąțɇ
-        new_state = __MODULE__.Implementation.unquote(api_call)
-        { :noreply, new_state }
-        # |> Common.create_genserver_response(unquote(state_var))
-      end
-    end
-  end
-
-  defp call_or_cast(:two_way, request, state_var, api_call) do
-    quote do
-      def handle_call(unquote(request), _, șțąțɇ) do
-        unquote(state_var) = șțąțɇ
-        __MODULE__.Implementation.unquote(api_call)
-        |> Common.create_genserver_response(șțąțɇ)
-      end
-    end
-  end
 
   @doc false
   @impl Strategy
-  def generate_implementation(options, {_one_or_two_way, call, do: body}) do
-    fix_warning = quote do
-      _ = var!(unquote({ state_name(options), [], Elixir }))
-      unquote(body)
-    end
+  defdelegate generate_handle_call(options,function),    to: Strategy
 
-    quote do
-      def(unquote(api_signature(options, call)), do: unquote(fix_warning))
-    end
-  end
+  @doc false
+  @impl Strategy
+  defdelegate generate_implementation(options,function), to: Strategy
 
   # only used for pools
   @doc false
@@ -246,47 +211,7 @@ defmodule Component.Strategy.Global do
   def generate_delegator(_options, {_one_or_two_way, _call, _body}), do: nil
 
 
-  # given def fred(a, b) return { :fred, a, b } (in quoted form)
-  @doc false
-  def call_signature({ name, _, args }, options) do
-    no_state_args = args_without_state_or_defaults(args, options)
-    { :{}, [], [ name |  no_state_args ] }
-  end
-
   # given def fred(a, b) return def fred(«state name», a, b)
-
-  @doc false
-  def api_signature(options, { name, context, args }) do
-    no_state_args = args_without_state_or_defaults(args, options)
-
-    { name, context, [ { state_name(options), [], nil } | no_state_args ] }
-  end
-
-  def args_without_state(args, options) do
-    state_name = state_name(options)
-    args
-    |> Enum.reject(fn { name, _, _ } -> name == state_name end)
-    |> Enum.map(fn name -> var!(name) end)
-  end
-
-  def args_without_state_or_defaults(args, options) do
-    args_without_state(args, options)
-    |> remove_any_default_values()
-  end
-
-  defp remove_any_default_values(args) do
-    args
-    |> Enum.map(&remove_one_default/1)
-  end
-
-  defp remove_one_default({ :\\, _, [ arg, _val ]}) do
-    arg
-  end
-
-  defp remove_one_default(arg) do
-    arg
-  end
-
 
 
   @doc false
@@ -294,17 +219,4 @@ defmodule Component.Strategy.Global do
     options[:service_name] || quote(do: __MODULE__)
   end
 
-  @doc false
-  defp state_name(options) do
-    check_state_name(options[:state_name])
-  end
-
-  defp check_state_name(nil), do: :state
-  defp check_state_name(name) when is_atom(name), do: name
-  defp check_state_name({name, _, _}) do
-    raise CompileError, description: "state_name: “#{name}” should be an atom, not a variable"
-  end
-  defp check_state_name(name) do
-    raise CompileError, description: "state_name: “#{inspect name}” should be an atom"
-  end
 end

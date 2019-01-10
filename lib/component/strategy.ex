@@ -1,6 +1,7 @@
 defmodule Component.Strategy do
 
   alias   Component.Strategy.PreprocessorState, as: PS
+  alias   Component.Strategy.Common
 
   @moduledoc """
   The strategy-specific stuff is implemented in submodules
@@ -17,6 +18,7 @@ defmodule Component.Strategy do
   @type  options     :: Map.t
   @type  original_fn :: quoted_code
 
+  @callback parse_options(Map.t, Keyword.t, atom) :: Map.t
   @callback generate_api_call(options, original_fn) :: quoted_code
   @callback generate_handle_call(options, original_fn) :: quoted_code
   @callback generate_implementation(options, original_fn) :: quoted_code
@@ -27,7 +29,7 @@ defmodule Component.Strategy do
     options = parse_options(options_from_using, target_module, strategy)
     PS.start_link(target_module, strategy, options)
 
-    generated_code = quote do
+    quote do
       import Component.Strategy.Common, only: [
         callbacks: 1,
         one_way: 2,
@@ -71,13 +73,13 @@ defmodule Component.Strategy do
 
 
 
-  @doc """
-  Orchestrate the production of code for a particular strategy. We're
-  called after the target module has been parsed but before compilation.
-  All tne one-way and two-way declarations have been tucked away in the
-  preprocessor state: we extract them and get the individual strategies
-  to generate code.
-  """
+
+  # Orchestrate the production of code for a particular strategy. We're
+  # called after the target module has been parsed but before compilation.
+  # All tne one-way and two-way declarations have been tucked away in the
+  # preprocessor state: we extract them and get the individual strategies
+  # to generate code.
+
   defp generate_code(strategy, target_module, options) do
     functions = gather_code_and_metadata(target_module, strategy)
     strategy.emit_code(functions, target_module, options)
@@ -123,7 +125,6 @@ defmodule Component.Strategy do
 
    @doc false
    defp maybe_show_generated_code(code, opts) do
-    IO.inspect show_code: code
     if opts.show_code do
       IO.puts ""
       code
@@ -155,6 +156,57 @@ defmodule Component.Strategy do
     else
       nil
     end
+  end
+
+
+    @doc false
+    def generate_handle_call(options, { one_or_two_way, call, _body}) do
+      request  = Common.call_signature(call, options)
+      api_call = api_signature(options, call)
+      state_var = { Common.state_name(options), [], nil }
+
+      call_or_cast(one_or_two_way, request, state_var, api_call)
+    end
+
+    defp call_or_cast(:one_way, request, state_var, api_call) do
+      quote do
+        def handle_cast(unquote(request), șțąțɇ) do
+          unquote(state_var) = șțąțɇ
+          new_state = __MODULE__.Implementation.unquote(api_call)
+          { :noreply, new_state }
+          # |> Common.create_genserver_response(unquote(state_var))
+        end
+      end
+    end
+
+    defp call_or_cast(:two_way, request, state_var, api_call) do
+      quote do
+        def handle_call(unquote(request), _, șțąțɇ) do
+          unquote(state_var) = șțąțɇ
+          __MODULE__.Implementation.unquote(api_call)
+          |> Common.create_genserver_response(șțąțɇ)
+        end
+      end
+    end
+
+    @doc false
+    def generate_implementation(options, {_one_or_two_way, call, do: body}) do
+      fix_warning = quote do
+        _ = var!(unquote({ Common.state_name(options), [], Elixir }))
+        unquote(body)
+      end
+
+      quote do
+        def(unquote(api_signature(options, call)), do: unquote(fix_warning))
+      end
+    end
+
+
+  @doc false
+  def api_signature(options, { name, context, args }) do
+    no_state_args = Common.args_without_state_or_defaults(args, options)
+
+    { name, context, [ { Common.state_name(options), [], nil } | no_state_args ] }
   end
 
 end

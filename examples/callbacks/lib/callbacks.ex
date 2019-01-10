@@ -1,6 +1,6 @@
 defmodule Callbacks do
 
-  use Component.Strategy.Global,
+  use Component.Strategy.Dynamic,
       top_level: true,
       show_code: true,
       state_name: :count,
