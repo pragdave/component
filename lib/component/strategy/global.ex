@@ -177,7 +177,7 @@ defmodule Component.Strategy.Global do
   @impl Strategy
   def generate_api_call(options, {one_or_two_way, call, _body}) do
     { name, context, args } = call
-    call = { name, context, Common.args_without_state(args, options) }
+    call = { name, context, CodeGenHelper.args_without_state(args, options) }
     quote do
       def(unquote(call), do: unquote(api_body(one_or_two_way, options, call)))
     end
@@ -185,7 +185,7 @@ defmodule Component.Strategy.Global do
 
   @doc false
   defp api_body(one_or_two_way, options, call) do
-    request = Common.call_signature(call, options)
+    request = CodeGenHelper.call_signature(call, options)
     quote do
       GenServer.unquote(invocation(one_or_two_way))({ :via, :global, unquote(service_name(options)) }, unquote(request))
     end

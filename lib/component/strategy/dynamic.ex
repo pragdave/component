@@ -194,13 +194,13 @@ defmodule Component.Strategy.Dynamic do
   # Prepend `worker_pid` to the calling sequence of a function
   # definition
   defp signature_with_pid({ name, context, args }, options) do
-    args = Common.args_without_state(args, options)
+    args = CodeGenHelper.args_without_state(args, options)
     { name, context, [ { :worker_pid, [line: 1], nil } | args ]}
   end
 
   @doc false
   def api_body(:one_way, options, call) do
-    request = Common.call_signature(call, options)
+    request = CodeGenHelper.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
       GenServer.cast(unquote(pid_var), unquote(request))
@@ -209,7 +209,7 @@ defmodule Component.Strategy.Dynamic do
 
 
   def api_body(:two_way, options, call) do
-    request = Common.call_signature(call, options)
+    request = CodeGenHelper.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
       GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
@@ -234,7 +234,7 @@ defmodule Component.Strategy.Dynamic do
   @doc false
   def delegate_body(options, call) do
     timeout = options[:timeout] || 5000
-    request = Common.call_signature(call, options)
+    request = CodeGenHelper.call_signature(call, options)
     quote do
       Component.Scheduler.run(@name, unquote(request), unquote(timeout))
     end

@@ -1,9 +1,12 @@
 defmodule Component.Strategy.Common do
-
-
   alias Component.Strategy.PreprocessorState, as: PS
 
-  @moduledoc false
+  @moduledoc """
+  Code in here is called from the target module, either at compile time
+  (with things such as `one_way`) or at runtime (for example with
+  `set_state`). There are also a few functions called by code that
+  we generate (such as `create_genserver_response`)
+  """
 
   @doc """
   Defines a worker function that simply updates the state. It will
@@ -67,7 +70,7 @@ defmodule Component.Strategy.Common do
   end
 
   defp n_way_implementation(one_or_two, caller, call, body) do
-    PS.add_function(caller, { one_or_two, call, body })
+    PS.add_function(caller, {one_or_two, call, body})
     nil
   end
 
@@ -85,8 +88,8 @@ defmodule Component.Strategy.Common do
   """
 
   defmacro set_state_and_return(new_state) do
-    quote bind_quoted: [ state: new_state ] do
-      { :reply, state, state }
+    quote bind_quoted: [state: new_state] do
+      {:reply, state, state}
     end
   end
 
@@ -105,10 +108,9 @@ defmodule Component.Strategy.Common do
   ~~~
   """
 
-
   defmacro set_state(new_state, do: return) do
     quote do
-      { :reply, unquote(return), unquote(new_state) }
+      {:reply, unquote(return), unquote(new_state)}
     end
   end
 
@@ -123,42 +125,6 @@ defmodule Component.Strategy.Common do
 
   # # The strategy is the module (Global, Dynamic, Pooled)
 
-
-#   @doc false
-# #   def generate_code(caller, strategy) do
-
-# # #X#    { options, apis, handlers, implementations, _delegators } =
-# # #X#      create_functions_from_originals(caller, strategy)
-
-# #     callbacks = PS.get_callbacks(caller)
-
-# #     PS.stop(caller)
-
-# #     application = maybe_create_application(options)
-
-# #     quote do
-# #       use GenServer
-
-# #       unquote(application)
-
-# #       defoverridable(init: 1)
-
-# #       unquote(callbacks)
-
-# #       unquote_splicing(apis)
-# #       unquote_splicing(handlers)
-# #       defmodule Implementation do
-# #         unquote_splicing(implementations)
-# #       end
-# #     end
-# #     |> maybe_show_generated_code(options)
-# #   end
-
-#   @doc false
-
-
-
-
   @doc !"public only for testing"
   def create_genserver_response(response = {:reply, _, _}, _state) do
     response
@@ -166,10 +132,21 @@ defmodule Component.Strategy.Common do
 
   @doc false
   def create_genserver_response(result, state) do
-    { :reply, result, state }
+    {:reply, result, state}
   end
 
 
+
+  defmodule CommonAttribute do
+    @moduledoc """
+    Some "global" constants.
+    """
+    def no_overrides do
+      :__flag_to_say_no_state_was_passed_to_create__
+    end
+  end
+
+  @no_overrides CommonAttribute.no_overrides()
 
   @doc """
   The create call accepts an optional state. A component can also have a
@@ -187,24 +164,13 @@ defmodule Component.Strategy.Common do
   | func    |  override | func(override)
 
   """
-
-  defmodule CommonAttribute do
-    def no_overrides do
-      :__flag_to_say_no_state_was_passed_to_create__
-    end
-  end
-
-  @no_overrides CommonAttribute.no_overrides
-
   def derive_state(@no_overrides, default_state)
-  when is_function(default_state)
-  do
+      when is_function(default_state) do
     default_state.(nil)
   end
 
   def derive_state(overrides, default_state)
-  when is_function(default_state)
-  do
+      when is_function(default_state) do
     default_state.(overrides)
   end
 
@@ -216,51 +182,41 @@ defmodule Component.Strategy.Common do
     overrides
   end
 
+  # def args_without_state(args, options) do
+  #   state_name = state_name(options)
 
+  #   args
+  #   |> Enum.reject(fn {name, _, _} -> name == state_name end)
+  #   |> Enum.map(fn name -> var!(name) end)
+  # end
 
+  # def args_without_state_or_defaults(args, options) do
+  #   args_without_state(args, options)
+  #   |> remove_any_default_values()
+  # end
 
+  # defp remove_any_default_values(args) do
+  #   args
+  #   |> Enum.map(&remove_one_default/1)
+  # end
 
-  def args_without_state(args, options) do
-    state_name = state_name(options)
-    args
-    |> Enum.reject(fn { name, _, _ } -> name == state_name end)
-    |> Enum.map(fn name -> var!(name) end)
-  end
+  # defp remove_one_default({:\\, _, [arg, _val]}), do: arg
+  # defp remove_one_default(arg), do: arg
 
-  def args_without_state_or_defaults(args, options) do
-    args_without_state(args, options)
-    |> remove_any_default_values()
-  end
-
-  defp remove_any_default_values(args) do
-    args
-    |> Enum.map(&remove_one_default/1)
-  end
-
-  defp remove_one_default({ :\\, _, [ arg, _val ]}), do: arg
-  defp remove_one_default(arg),                      do: arg
-
-
-    @doc false
-    def state_name(options) do
-      check_state_name(options[:state_name])
-    end
-
-    defp check_state_name(nil), do: :state
-    defp check_state_name(name) when is_atom(name), do: name
-    defp check_state_name({name, _, _}) do
-      raise CompileError, description: "state_name: “#{name}” should be an atom, not a variable"
-    end
-    defp check_state_name(name) do
-      raise CompileError, description: "state_name: “#{inspect name}” should be an atom"
-    end
-
-
-  # given def fred(a, b) return { :fred, a, b } (in quoted form)
   @doc false
-  def call_signature({ name, _, args }, options) do
-    no_state_args = args_without_state_or_defaults(args, options)
-    { :{}, [], [ name |  no_state_args ] }
+  def state_name(options) do
+    check_state_name(options[:state_name])
+  end
+
+  defp check_state_name(nil), do: :state
+  defp check_state_name(name) when is_atom(name), do: name
+
+  defp check_state_name({name, _, _}) do
+    raise CompileError, description: "state_name: “#{name}” should be an atom, not a variable"
+  end
+
+  defp check_state_name(name) do
+    raise CompileError, description: "state_name: “#{inspect(name)}” should be an atom"
   end
 
 

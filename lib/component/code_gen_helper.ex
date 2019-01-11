@@ -35,7 +35,7 @@ defmodule Component.CodeGenHelper do
 
   @doc false
   def generate_handle_call(options, {one_or_two_way, call, _body}) do
-    request = Common.call_signature(call, options)
+    request = call_signature(call, options)
     api_call = api_signature(options, call)
     state_var = {Common.state_name(options), [], nil}
 
@@ -78,8 +78,39 @@ defmodule Component.CodeGenHelper do
 
   @doc false
   def api_signature(options, {name, context, args}) do
-    no_state_args = Common.args_without_state_or_defaults(args, options)
+    no_state_args = args_without_state_or_defaults(args, options)
 
     {name, context, [{Common.state_name(options), [], nil} | no_state_args]}
   end
+
+
+  def args_without_state(args, options) do
+    state_name = Common.state_name(options)
+
+    args
+    |> Enum.reject(fn {name, _, _} -> name == state_name end)
+    |> Enum.map(fn name -> var!(name) end)
+  end
+
+  def args_without_state_or_defaults(args, options) do
+    args_without_state(args, options)
+    |> remove_any_default_values()
+  end
+
+  defp remove_any_default_values(args) do
+    args
+    |> Enum.map(&remove_one_default/1)
+  end
+
+  # given def fred(a, b) return { :fred, a, b } (in quoted form)
+  @doc false
+  def call_signature({name, _, args}, options) do
+    no_state_args = args_without_state_or_defaults(args, options)
+    {:{}, [], [name | no_state_args]}
+  end
+
+
+  defp remove_one_default({:\\, _, [arg, _val]}), do: arg
+  defp remove_one_default(arg), do: arg
+
 end
