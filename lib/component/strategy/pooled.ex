@@ -118,7 +118,7 @@ defmodule Component.Strategy.Pooled do
 
   """
 
-  alias Component.Strategy
+  alias Component.{ CodeGenHelper, Strategy }
   alias Component.Strategy.{ Common, Dynamic }
 
   @behaviour Strategy
@@ -212,11 +212,11 @@ defmodule Component.Strategy.Pooled do
 
   @doc false
   @impl Strategy
-  defdelegate generate_handle_call(options,function),    to: Strategy
+  defdelegate generate_handle_call(options,function),    to: CodeGenHelper
 
   @doc false
   @impl Strategy
-  defdelegate generate_implementation(options,function), to: Strategy
+  defdelegate generate_implementation(options,function), to: CodeGenHelper
 
   @doc false
   @impl Strategy

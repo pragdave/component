@@ -86,6 +86,7 @@ defmodule Component.Strategy.Global do
 
   """
 
+  alias   Component.CodeGenHelper
   alias   Component.Strategy
   alias   Component.Strategy.Common
   require Common
@@ -123,7 +124,7 @@ defmodule Component.Strategy.Global do
       [ name: unquote(name_opt) ]
     end
 
-    application = Strategy.maybe_create_application(options)
+    application = CodeGenHelper.maybe_create_application(options)
 
     quote do
       use GenServer
@@ -196,11 +197,11 @@ defmodule Component.Strategy.Global do
 
   @doc false
   @impl Strategy
-  defdelegate generate_handle_call(options,function),    to: Strategy
+  defdelegate generate_handle_call(options,function),    to: CodeGenHelper
 
   @doc false
   @impl Strategy
-  defdelegate generate_implementation(options,function), to: Strategy
+  defdelegate generate_implementation(options,function), to: CodeGenHelper
 
   # only used for pools
   @doc false

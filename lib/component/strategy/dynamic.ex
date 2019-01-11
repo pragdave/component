@@ -106,8 +106,8 @@ defmodule Component.Strategy.Dynamic do
 
   """
 
+  alias Component.CodeGenHelper
   alias Component.Strategy
-
   alias Component.Strategy.Common
   alias Common.CommonAttribute, as: CA
 
@@ -134,7 +134,7 @@ defmodule Component.Strategy.Dynamic do
 
   def emit_code(generated, _target_module, options) do
 
-    application = Strategy.maybe_create_application(options)
+    application = CodeGenHelper.maybe_create_application(options)
 
     quote do
       @name unquote(options.service_name)
@@ -246,11 +246,11 @@ defmodule Component.Strategy.Dynamic do
 
   @doc false
   @impl Strategy
-  defdelegate generate_handle_call(options,function),    to: Strategy
+  defdelegate generate_handle_call(options,function),    to: CodeGenHelper
 
   @doc false
   @impl Strategy
-  defdelegate generate_implementation(options,function), to: Strategy
+  defdelegate generate_implementation(options,function), to: CodeGenHelper
 
   @doc false
   @impl Strategy

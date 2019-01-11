@@ -1,7 +1,6 @@
 defmodule Component.Strategy do
 
   alias   Component.Strategy.PreprocessorState, as: PS
-  alias   Component.Strategy.Common
 
   @moduledoc """
   The strategy-specific stuff is implemented in submodules
@@ -145,80 +144,5 @@ defmodule Component.Strategy do
   defp timeout_option(nil), do: 5000
   defp timeout_option(t) when is_float(t),   do: floor(t*1000)
   defp timeout_option(t) when is_integer(t), do: t
-
-
-
-
-  @doc """
-  If this component is top-level, generate the application stuff.
-  """
-  def maybe_create_application(options) do
-    if options[:top_level] do
-      quote do
-        use Application
-        def start(_type, _args) do
-          children = [ %{
-            id:     __MODULE__.Id,
-            start: { __MODULE__, :wrapped_create, [] }
-           }]
-          opts = [strategy: :one_for_one, name: __MODULE__.Supervisor]
-          IO.inspect Supervisor.start_link(children, opts)
-        end
-      end
-    else
-      nil
-    end
-  end
-
-
-    @doc false
-    def generate_handle_call(options, { one_or_two_way, call, _body}) do
-      request  = Common.call_signature(call, options)
-      api_call = api_signature(options, call)
-      state_var = { Common.state_name(options), [], nil }
-
-      call_or_cast(one_or_two_way, request, state_var, api_call)
-    end
-
-    defp call_or_cast(:one_way, request, state_var, api_call) do
-      quote do
-        def handle_cast(unquote(request), șțąțɇ) do
-          unquote(state_var) = șțąțɇ
-          new_state = __MODULE__.Implementation.unquote(api_call)
-          { :noreply, new_state }
-          # |> Common.create_genserver_response(unquote(state_var))
-        end
-      end
-    end
-
-    defp call_or_cast(:two_way, request, state_var, api_call) do
-      quote do
-        def handle_call(unquote(request), _, șțąțɇ) do
-          unquote(state_var) = șțąțɇ
-          __MODULE__.Implementation.unquote(api_call)
-          |> Common.create_genserver_response(șțąțɇ)
-        end
-      end
-    end
-
-    @doc false
-    def generate_implementation(options, {_one_or_two_way, call, do: body}) do
-      fix_warning = quote do
-        _ = var!(unquote({ Common.state_name(options), [], Elixir }))
-        unquote(body)
-      end
-
-      quote do
-        def(unquote(api_signature(options, call)), do: unquote(fix_warning))
-      end
-    end
-
-
-  @doc false
-  def api_signature(options, { name, context, args }) do
-    no_state_args = Common.args_without_state_or_defaults(args, options)
-
-    { name, context, [ { Common.state_name(options), [], nil } | no_state_args ] }
-  end
 
 end
