@@ -185,7 +185,7 @@ You start to work on your resumé.
 
 ## The Start of a Moral
 
-That's a lot of code churn. And none of it involved the actually logic
+That's a lot of code churn. And none of it involved the actual logic
 of the module; it was all the boilerplate surrounding code that changed.
 
 Clearly, this is the kind of stuff we do all the time, and the changes
@@ -315,7 +315,7 @@ becomes the new state of our server. It is implemented under the covers
 using a GenServer _cast_.
 
 A two-way function returns a value (and so is a GenServer _call_). Its
-return value is what is given back to the called of the API. If you
+return value is what is given back to the caller of the API. If you
 don't need to update state, that's all you have to do. If you _do_ need
 to change the state as well as return a value, you can do that as well.
 
@@ -595,7 +595,7 @@ processing of items in the collection is automatically parallelized.
 
 It's all about the state. _Shared_ state.
 
-If you don't to share your state with anybody. Then good news,
+If you don't share your state with anybody then good news,
 you don't need processes and you don't need this library (for now).
 You will live a happier life than the rest of us.
 
@@ -788,7 +788,7 @@ defmodule Counter do
 end
 ~~~
 
-Here, it you call `Counter.create()`, the initial state will be set to
+Here, if you call `Counter.create()`, the initial state will be set to
 `0`, the value in the `using` clause. If instead you pass a value, such
 as `Counter.create(99)`, that value will be used to set the state.
 
@@ -865,7 +865,7 @@ end
 ~~~
 
 Notice that we have three modules here. The top-level `FourOhFour`
-contains the external API. The nested `Worked` module is the Genserver
+contains the external API. The nested `Worker` module is the Genserver
 code, and the `Implementation` module contains the code that you wrote
 inside the one-way and two-way functions.
 
@@ -932,7 +932,7 @@ handful of lines I'll split it out into its own file.
 
 Regardless of the component type, the code you write in the `one_way`
 and `two_way` declarations ends up running in a GenServer. The Component
-library takes care of the housekeep, so you can normally just ignore all
+library takes care of the housekeeping, so you can normally just ignore all
 that. However, sometimes you need to be able to add code to the
 GenServer that Component generates for you. In particular, you may need
 to implement one or more of the GenServer callbacks (`code_change/3`,
