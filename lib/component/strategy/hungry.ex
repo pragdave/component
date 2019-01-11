@@ -18,15 +18,28 @@ defmodule Component.Strategy.Hungry do
   * `name:`
     The name to give the component. Defaults to the module name.
 
-  * `default_concurrency:`
+  * `concurrency:`
     The number of worker processes to start. Defaults to the number of
-    active schedulers on the node running the component.
+    active schedulers on the node running the component. This can be
+    overridden on a per-call basis by passing it as an option to `consume`.
 
-  * `default_timeout:`
-    The overall processing timeout. Defaults to 5,000mS
+  * `timeout:`
+    The overall processing timeout. Defaults to 5,000mS. This can be
+    overridden on a per-call basis by passing it as an option to `consume`.
 
   * `show_code:`
     Dumps the generated code to STDOUT if truthy.
+
+  ### Invoking The Hungry Servers
+
+  Use the target module's `consume` function to kick off the processing
+  by the hungry servers. It takes an enumerable or a stream. The hungry
+  servers take entries from this collection and process them, returning
+  a list of the results.
+
+  The `consume` function takes optional `timeout:` and `concurrency:`
+  options, which override any the defaults given in the `use
+  Component.Strategy.Hungry` call.
 
   ### Example
 
@@ -47,15 +60,15 @@ defmodule Component.Strategy.Hungry do
     def process({a, b}), do: { b, a }
   end
 
-  HungryAdderinitialize()
-  HungryAdderconsume([1,2,"cat"])   # ->  [ 3, 6, "catcat" ]
-  HungryAdderconsume(a: :b, c: :d)  #     [ b: :a, d: :c ]
-  HungryAdderconsume(1..100)        #     [ 3, 6, 9, ... ]
+  HungryAdder.initialize()
+  HungryAdder.consume([1,2,"cat"])   # ->  [ 3, 6, "catcat" ]
+  HungryAdder.consume(a: :b, c: :d)  #     [ b: :a, d: :c ]
+  HungryAdder.consume(1..100, timeout: 300)        #     [ 3, 6, 9, ... ]
   ~~~
   """
 
  ########################################################################
- # Implementation note: This strategu is different enough from global   #
+ # Implementation note: This strategy is different enough from global   #
  # and dynamic that it doesn't need to have the Strategy behaviour: it  #
  # is totally self-contained.                                           #
  ########################################################################

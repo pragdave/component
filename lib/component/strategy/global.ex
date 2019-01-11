@@ -79,6 +79,15 @@ defmodule Component.Strategy.Global do
     The default name for the service is the name of the module that
     defines it. Use `service_name:` to change this.
 
+  * `timeout:`  _timeout_
+    The timeout that will apply to calls to `two_way` functions.
+
+    If you pass a float, then it is the time in seconds.
+
+    If you pass an integer, then it'sm the time in milliseconds.
+
+    Defaults to 5.0 seconds
+
   * `show_code:` _boolean_
 
     If truthy, dump a representation of the generated code to STDOUT
@@ -161,9 +170,7 @@ defmodule Component.Strategy.Global do
       defoverridable(init: 1)
 
       unquote(generated.callbacks)
-
       unquote_splicing(generated.apis)
-
       unquote_splicing(generated.handlers)
 
       defmodule Implementation do
@@ -184,15 +191,24 @@ defmodule Component.Strategy.Global do
   end
 
   @doc false
-  defp api_body(one_or_two_way, options, call) do
+  defp api_body(:one_way, options, call) do
     request = CodeGenHelper.call_signature(call, options)
     quote do
-      GenServer.unquote(invocation(one_or_two_way))({ :via, :global, unquote(service_name(options)) }, unquote(request))
+      GenServer.cast(
+        { :via, :global, unquote(service_name(options)) },
+        unquote(request))
     end
   end
 
-  defp invocation(:one_way), do: :cast
-  defp invocation(:two_way), do: :call
+  defp api_body(:two_way, options, call) do
+    request = CodeGenHelper.call_signature(call, options)
+    quote do
+      GenServer.call(
+        { :via, :global, unquote(service_name(options)) },
+        unquote(request),
+        unquote(options.timeout))
+    end
+  end
 
 
   @doc false

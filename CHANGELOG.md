@@ -1,6 +1,25 @@
 
 ## [Unreleased]
 
+### Added
+
+- `:timeout` is now supported for Strategy.Global (so it is now
+   supported by all strategies)
+
+### Changed
+
+- Renamed the Strategy.Hungry options from `:default_timeout` and
+  `:default_concurrency` to just `:timeout` and `:concurrency` (because
+  `:timeout` is the option used by the other strategies)
+
+- Refactored all of the strategy code. I'd forgotten just how
+  organically it had grown, and like most organic things it had rotted
+  over time.
+
+### Removed
+
+### Fixed
+
 ## [v0.2.3] - 2019-01-08
 
 ### Added

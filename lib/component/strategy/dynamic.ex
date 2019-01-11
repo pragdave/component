@@ -212,24 +212,9 @@ defmodule Component.Strategy.Dynamic do
     request = CodeGenHelper.call_signature(call, options)
     pid_var = { :worker_pid, [], nil }
     quote do
-      GenServer.call(unquote(pid_var), unquote(request), unquote(genserver_timeout(options)))
+      GenServer.call(unquote(pid_var), unquote(request), unquote(options.timeout))
     end
   end
-
-
-  defp genserver_timeout(options) do
-    case options[:timeout] do
-      nil ->
-        5_000
-      i when is_integer(i) ->
-        i
-      f when is_float(f) ->
-        :math.floor(f * 1000.0)
-      other ->
-        raise "Expecting integer or float for timeout value, but got #{inspect other}"
-    end
-  end
-
 
   @doc false
   def delegate_body(options, call) do

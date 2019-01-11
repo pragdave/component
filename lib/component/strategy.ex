@@ -46,9 +46,9 @@ defmodule Component.Strategy do
   defp parse_options(options_from_using, target_module, strategy) do
     %{
       initial_state:  Keyword.get(options_from_using, :initial_state, :no_initial_state),
-      state_name:     Keyword.get(options_from_using, :state_name,    :state),
       service_name:   Keyword.get(options_from_using, :service_name,  target_module),
       show_code:      Keyword.get(options_from_using, :show_code,     false),
+      state_name:     Keyword.get(options_from_using, :state_name,    :state),
       timeout:        timeout_option(options_from_using[:timeout]),
     }
     |> strategy.parse_options(options_from_using, target_module)
@@ -141,8 +141,8 @@ defmodule Component.Strategy do
 
   # If the use gives a float, it's the time in seconds. If it is an
   # integer, it's the time in milliseconds, otherwise it's a default 5000
-  defp timeout_option(nil), do: 5000
-  defp timeout_option(t) when is_float(t),   do: floor(t*1000)
+  defp timeout_option(nil),                  do: 5000
+  defp timeout_option(t) when is_float(t),   do: :math.floor(t*1000)
   defp timeout_option(t) when is_integer(t), do: t
 
 end
