@@ -47,31 +47,46 @@ defmodule Component.Strategy.Hungry do
 
   * `timeout:` _nnn_
 
-  Set the timeout for this particular call
+     Set the timeout for this particular call
 
   * `concurrency:`
 
-  How many workers will consume this resource.
+     How many workers will consume this resource.
 
   * `into:`
 
-  The `into:` option determines how the results are returned.
+     The `into:` option determines how the results are returned.
 
-  * `[ ]`, `%{ }`
+     * `[ ]`, `%{ }`
 
-    Return a list or map when the workers all finish.
+       Return a list or map when the workers all finish.
 
-  * `:stream`
+     * `:stream`
 
-    Immediate return a stream of the results. Results will become
-    available on this stream as they are produced.
+       Immediate return a stream of the results. Results will become
+       available on this stream as they are produced.
 
-  * `fn val -> ... end`
+     * `fn val -> ... end`
 
-    Invoke the given function for each result as it becomes available,
-    passing it the result.
+       Invoke the given function for each result as it becomes available,
+       passing it the result.
 
-  options,
+  * `when_done:` _fn result -> ... end_
+
+    Invoke the function when all processing is complete. It is passed
+    the result of the computation.
+
+  ### Synchronous vs. Asynchronous
+
+  A call to `consume` which returns a reified result (for
+  example a list or a map) is always synchronous. If you don't override
+  anything, this willbe the case, as the result is returned as a list.
+
+  If the `into:` parameter specifies `:stream` or a function, then
+  `consume` might return before the workers have finished. In this case
+  values willbe made available to the streasm or function as they become
+  available. The `when_done:` callback can then be used to determine
+  when processing is complete.
 
   ### Example
 
@@ -132,7 +147,11 @@ defmodule Component.Strategy.Hungry do
         result = Task.async_stream(feed, &process/1, opts)
                  |> Stream.map(fn { :ok, val } -> val end)
 
-        Component.Strategy.Common.forward_stream(result, into)
+        result = Component.Strategy.Common.forward_stream(result, into)
+        if func = options[:when_done] do
+          func.(result)
+        end
+        result
       end
     end
   end

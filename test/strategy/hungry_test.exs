@@ -35,6 +35,11 @@ defmodule Test.Strategy.Hungry do
     assert HA.consume(1..100) == (1..100 |> Enum.map(&(&1*3)))
   end
 
+  test "when_done function called" do
+    send_result = fn x -> send(self(), {:got, x}) end
+    assert HA.consume([1,2,"cat"], when_done: send_result) == [ 3, 6, "catcat" ]
+    assert_receive({:got, [ 3, 6, "catcat" ]})
+  end
 
   defmodule Adder do
 

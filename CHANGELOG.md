@@ -10,6 +10,10 @@
   option, allowing the results to be returned synchronously into a list
   or map, or asynchronously into a function or a stream.
 
+- `consume/2` takes a `when_done:` option, which nominates a function to
+  call when the work in complete. The function is passed the result.
+  This is probably most useful when the consume is asynchronous.
+
 ### Changed
 
 - Renamed the Strategy.Hungry options from `:default_timeout` and
