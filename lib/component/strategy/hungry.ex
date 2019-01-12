@@ -15,20 +15,24 @@ defmodule Component.Strategy.Hungry do
   The `using Component.Strategy.Hungry` call takes the following
   options:
 
-  * `name:`
+  * `service_name:`
+
     The name to give the component. Defaults to the module name.
 
   * `concurrency:`
+
     The number of worker processes to start. Defaults to the number of
     active schedulers on the node running the component. This can be
-    overridden on a per-call basis by passing it as an option to `consume`.
+    overridden on a per-call basis by passing it as an option to
+    `consume`.
 
   * `timeout:`
-    The overall processing timeout. Defaults to 5,000mS. This can be
-    overridden on a per-call basis by passing it as an option to `consume`.
 
-  * `show_code:`
-    Dumps the generated code to STDOUT if truthy.
+    The overall processing timeout. Defaults to 5,000mS. This can be
+    overridden on a per-call basis by passing it as an option to
+    `consume`.
+
+  * `show_code:` Dumps the generated code to STDOUT if truthy.
 
   ### Invoking The Hungry Servers
 
@@ -37,9 +41,37 @@ defmodule Component.Strategy.Hungry do
   servers take entries from this collection and process them, returning
   a list of the results.
 
-  The `consume` function takes optional `timeout:` and `concurrency:`
-  options, which override any the defaults given in the `use
-  Component.Strategy.Hungry` call.
+  The `consume` function takes options as its second parameter which
+  override any the defaults given in the `use Component.Strategy.Hungry`
+  call:
+
+  * `timeout:` _nnn_
+
+  Set the timeout for this particular call
+
+  * `concurrency:`
+
+  How many workers will consume this resource.
+
+  * `into:`
+
+  The `into:` option determines how the results are returned.
+
+  * `[ ]`, `%{ }`
+
+    Return a list or map when the workers all finish.
+
+  * `:stream`
+
+    Immediate return a stream of the results. Results will become
+    available on this stream as they are produced.
+
+  * `fn val -> ... end`
+
+    Invoke the given function for each result as it becomes available,
+    passing it the result.
+
+  options,
 
   ### Example
 
@@ -95,16 +127,12 @@ defmodule Component.Strategy.Hungry do
           max_concurrency: options[:concurrency] || unquote(default_concurrency),
           timeout:         options[:timeout]     || unquote(default_timeout)
         ]
+        into = Keyword.get(options, :into, [])
 
         result = Task.async_stream(feed, &process/1, opts)
-                 |> Enum.map(fn { :ok, val } -> val end)
+                 |> Stream.map(fn { :ok, val } -> val end)
 
-        case options[:into] do
-          nil ->
-            result
-          collectable ->
-            result |> Enum.into(collectable)
-        end
+        Component.Strategy.Common.forward_stream(result, into)
       end
     end
   end

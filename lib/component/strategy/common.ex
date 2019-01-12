@@ -182,27 +182,6 @@ defmodule Component.Strategy.Common do
     overrides
   end
 
-  # def args_without_state(args, options) do
-  #   state_name = state_name(options)
-
-  #   args
-  #   |> Enum.reject(fn {name, _, _} -> name == state_name end)
-  #   |> Enum.map(fn name -> var!(name) end)
-  # end
-
-  # def args_without_state_or_defaults(args, options) do
-  #   args_without_state(args, options)
-  #   |> remove_any_default_values()
-  # end
-
-  # defp remove_any_default_values(args) do
-  #   args
-  #   |> Enum.map(&remove_one_default/1)
-  # end
-
-  # defp remove_one_default({:\\, _, [arg, _val]}), do: arg
-  # defp remove_one_default(arg), do: arg
-
   @doc false
   def state_name(options) do
     check_state_name(options[:state_name])
@@ -219,5 +198,30 @@ defmodule Component.Strategy.Common do
     raise CompileError, description: "state_name: “#{inspect(name)}” should be an atom"
   end
 
+  @doc """
+  Forwards the contents of a stream either into a collectable or into a
+  function. If the target is a list or map, the stream is reified at
+  this point by calling `Enum.into`. In the latter case the function is
+  with each value in turn. (It you need that function to have more
+  context, simply create that context as a closure.P
+  """
+
+  def forward_stream(result, :stream) do
+    result
+  end
+
+  def forward_stream(result, func) when is_function(func) do
+    Stream.each(result, func)
+    |> Stream.run
+  end
+
+  def forward_stream(result, collectable)
+  when is_list(collectable) or is_map(collectable) do
+    Enum.into(result, collectable)
+  end
+
+  def forward_stream(result, collectable) do
+    Stream.into(result, collectable)
+  end
 
 end

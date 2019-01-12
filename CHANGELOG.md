@@ -6,6 +6,10 @@
 - `:timeout` is now supported for Strategy.Global (so it is now
    supported by all strategies)
 
+- the `consume/2` function for Hungry workers now takes an `into:`
+  option, allowing the results to be returned synchronously into a list
+  or map, or asynchronously into a function or a stream.
+
 ### Changed
 
 - Renamed the Strategy.Hungry options from `:default_timeout` and
