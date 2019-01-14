@@ -206,21 +206,39 @@ defmodule Component.Strategy.Common do
   context, simply create that context as a closure.P
   """
 
-  def forward_stream(result, :stream) do
+  def forward_stream(_result, :stream, when_done_callback)
+   when is_function(when_done_callback) do
+     raise """
+     You can't have a when_done callback when returning a stream from a
+     Hungry.consume, because the library can't determine what 'done'
+     means.
+     """
+  end
+
+  def forward_stream(result, :stream, _when_done_callback) do
     result
   end
 
-  def forward_stream(result, func) when is_function(func) do
-    Stream.each(result, func)
-    |> Stream.run
+  # TODO: find a better way to make this properly asynchronous
+  # (Stream.run suspends until the stream is fully processed, hence the
+  # spawn.)
+
+  def forward_stream(result, func, when_done_callback)
+  when is_function(func) do
+    stream = Stream.each(result, func)
+    spawn_link(fn ->
+      Stream.run(stream);
+      if when_done_callback, do: when_done_callback.(result)
+   end)
   end
 
-  def forward_stream(result, collectable)
+  def forward_stream(result, collectable, when_done_callback)
   when is_list(collectable) or is_map(collectable) do
     Enum.into(result, collectable)
+    if when_done_callback, do: when_done_callback.(result)
   end
 
-  def forward_stream(result, collectable) do
+  def forward_stream(result, collectable, _when_done_callback) do
     Stream.into(result, collectable)
   end
 

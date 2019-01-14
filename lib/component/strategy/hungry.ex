@@ -19,18 +19,24 @@ defmodule Component.Strategy.Hungry do
 
     The name to give the component. Defaults to the module name.
 
-  * `concurrency:`
+  * `default_concurrency:`
 
-    The number of worker processes to start. Defaults to the number of
-    active schedulers on the node running the component. This can be
-    overridden on a per-call basis by passing it as an option to
-    `consume`.
+    The number of worker processes started by `consume`.. Defaults to
+    the number of active schedulers on the node running the component.
+    This can be overridden on a per-call basis by passing it as an
+    option to `consume`.
 
-  * `timeout:`
+  * `default_timeout:`
 
     The overall processing timeout. Defaults to 5,000mS. This can be
     overridden on a per-call basis by passing it as an option to
     `consume`.
+
+  * `default_ordered:`
+
+     If truthy, results will be returned in the same order as inputs. If
+     this isn't a requirement, you'll sometimes get less delay between
+     results by setting this to false.
 
   * `show_code:` Dumps the generated code to STDOUT if truthy.
 
@@ -53,6 +59,10 @@ defmodule Component.Strategy.Hungry do
 
      How many workers will consume this resource.
 
+  * `ordered:`  _true_ | _false_
+
+     Whether results are returned in the same order as the inputs.
+
   * `into:`
 
      The `into:` option determines how the results are returned.
@@ -68,8 +78,8 @@ defmodule Component.Strategy.Hungry do
 
      * `fn val -> ... end`
 
-       Invoke the given function for each result as it becomes available,
-       passing it the result.
+       Invoke the given function for each result as it becomes
+       available, passing it the result.
 
   * `when_done:` _fn result -> ... end_
 
@@ -78,9 +88,9 @@ defmodule Component.Strategy.Hungry do
 
   ### Synchronous vs. Asynchronous
 
-  A call to `consume` which returns a reified result (for
-  example a list or a map) is always synchronous. If you don't override
-  anything, this willbe the case, as the result is returned as a list.
+  A call to `consume` which returns a reified result (for example a list
+  or a map) is always synchronous. If you don't override anything, this
+  willbe the case, as the result is returned as a list.
 
   If the `into:` parameter specifies `:stream` or a function, then
   `consume` might return before the workers have finished. In this case
@@ -129,6 +139,8 @@ defmodule Component.Strategy.Hungry do
   defp generate_hungry_service(caller, opts) do
     default_concurrency = opts[:default_concurrency] || System.schedulers_online()
     default_timeout     = opts[:default_timeout]     || 5000
+    default_ordered     = opts[:default_ordered]     || true
+
     name = opts[:name] || caller
 
     quote do
@@ -140,18 +152,16 @@ defmodule Component.Strategy.Hungry do
       def consume(feed, options \\ []) do
         opts = [
           max_concurrency: options[:concurrency] || unquote(default_concurrency),
-          timeout:         options[:timeout]     || unquote(default_timeout)
+          timeout:         options[:timeout]     || unquote(default_timeout),
+          ordered:         options[:ordered]     || unquote(default_ordered),
         ]
+
         into = Keyword.get(options, :into, [])
 
-        result = Task.async_stream(feed, &process/1, opts)
-                 |> Stream.map(fn { :ok, val } -> val end)
+        Task.async_stream(feed, &process/1, opts)
+        |> Stream.map(fn { :ok, val } -> val end)
+        |> Component.Strategy.Common.forward_stream(into, options[:when_done])
 
-        result = Component.Strategy.Common.forward_stream(result, into)
-        if func = options[:when_done] do
-          func.(result)
-        end
-        result
       end
     end
   end

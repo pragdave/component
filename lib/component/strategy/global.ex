@@ -133,6 +133,7 @@ defmodule Component.Strategy.Global do
       [ name: unquote(name_opt) ]
     end
 
+    IO.inspect options: options
     application = CodeGenHelper.maybe_create_application(options)
 
     quote do

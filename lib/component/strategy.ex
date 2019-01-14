@@ -49,6 +49,7 @@ defmodule Component.Strategy do
       service_name:   Keyword.get(options_from_using, :service_name,  target_module),
       show_code:      Keyword.get(options_from_using, :show_code,     false),
       state_name:     Keyword.get(options_from_using, :state_name,    :state),
+      top_level:      Keyword.get(options_from_using, :top_level,     :false),
       timeout:        timeout_option(options_from_using[:timeout]),
     }
     |> strategy.parse_options(options_from_using, target_module)
