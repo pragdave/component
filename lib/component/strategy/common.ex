@@ -234,8 +234,9 @@ defmodule Component.Strategy.Common do
 
   def forward_stream(result, collectable, when_done_callback)
   when is_list(collectable) or is_map(collectable) do
-    Enum.into(result, collectable)
+    result = Enum.into(result, collectable)
     if when_done_callback, do: when_done_callback.(result)
+    result
   end
 
   def forward_stream(result, collectable, _when_done_callback) do
