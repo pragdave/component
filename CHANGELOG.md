@@ -1,8 +1,13 @@
 
 ## [Unreleased]
 
-## [v0.2.4] - 2019-01-14
+### Fixed
 
+- returning a reified collection from Hungry.consume trampled on a
+  variable.
+
+
+## [v0.2.4] - 2019-01-14
 
 ### Added
 
