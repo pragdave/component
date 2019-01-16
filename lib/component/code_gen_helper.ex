@@ -88,7 +88,10 @@ defmodule Component.CodeGenHelper do
     state_name = Common.state_name(options)
 
     args
-    |> Enum.reject(fn {name, _, _} -> name == state_name end)
+    |> Enum.reject(fn
+                      {name, _, _} -> name == state_name
+                      _other       -> false
+                   end)
     |> Enum.map(fn name -> var!(name) end)
   end
 

@@ -6,6 +6,8 @@
 - returning a reified collection from Hungry.consume trampled on a
   variable.
 
+- The code that looked for the state variable in parameter lists din't
+  deal with destructured parameters.
 
 ## [v0.2.4] - 2019-01-14
 
