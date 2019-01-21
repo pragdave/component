@@ -1,6 +1,8 @@
 
 ## [Unreleased]
 
+## [v0.2.5] - 2019-01-21
+
 ### Added
 
 - now support `start_link([])` as a special case. This means that if
@@ -81,6 +83,7 @@
 
 
 [Unreleased]: https://github.com/pragdave/component/compare/v0.2.2...HEAD
+[v0.2.5]: https://github.com/pragdave/component/compare/v0.2.4...v0.2.5
 [v0.2.4]: https://github.com/pragdave/component/compare/v0.2.3...v0.2.4
 [v0.2.3]: https://github.com/pragdave/component/compare/v0.2.2...v0.2.3
 [v0.2.2]: https://github.com/pragdave/component/compare/v0.2.1...v0.2.2
