@@ -1,6 +1,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- now support `start_link([])` as a special case. This means that if
+  you use the default childspec with no args, the server will
+  use the initial value for state defined in the `using` block.
+
+- add `start_link` to the top-level Strategy.Dynamic module, so that it
+  can itself be supervised.
+
+- Add the `child_spec:` option to Global and Dynamic strategies. If
+  truthy, a `child_spec/1` function will be generated. If the value is a
+  map, its values will be used to override corresponding values in the
+  default.
+
 ### Fixed
 
 - returning a reified collection from Hungry.consume trampled on a

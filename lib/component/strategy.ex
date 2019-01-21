@@ -51,6 +51,7 @@ defmodule Component.Strategy do
       state_name:     Keyword.get(options_from_using, :state_name,    :state),
       top_level:      Keyword.get(options_from_using, :top_level,     :false),
       timeout:        timeout_option(options_from_using[:timeout]),
+      child_spec:     Keyword.get(options_from_using, :child_spec,    :false),
     }
     |> strategy.parse_options(options_from_using, target_module)
   end

@@ -36,8 +36,8 @@ defmodule Test.Strategy.Hungry do
   end
 
   test "when_done function called" do
-    send_result = fn x -> send(self(), {:got, x}) end
-    assert HA.consume([1,2,"cat"], when_done: send_result) == [ 3, 6, "catcat" ]
+    send_result = fn x -> send(self(), {:got, Enum.to_list(x)}) end
+    assert (HA.consume([1,2,"cat"], when_done: send_result) |> Enum.to_list()) == [ 3, 6, "catcat" ]
     assert_receive({:got, [ 3, 6, "catcat" ]})
   end
 

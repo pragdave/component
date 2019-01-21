@@ -53,6 +53,26 @@ defmodule Component.Strategy.Global do
 
   You can pass a keyword list to `use Component.Strategy.Global`:
 
+
+  * `child_spec: true`
+
+    Create a default `child_spec/1` function for this component:
+
+    ~~~ elixir
+    %{
+        id:       __MODULE__,
+        start:    { __MODULE__, :start_link, [opts] },
+        type:     :worker,
+        restart:  :permanent,
+        shutdown: 500
+    }
+    ~~~
+
+  * `child_spec: ` _map_
+
+    Create a `child_spec/1` function where values in the map override
+    corresponding values in the default.
+
   * `initial_state:` _value_
 
   * `state_name:` _atom_
@@ -133,13 +153,14 @@ defmodule Component.Strategy.Global do
       [ name: unquote(name_opt) ]
     end
 
-    IO.inspect options: options
     application = CodeGenHelper.maybe_create_application(options)
+    child_spec  = CodeGenHelper.maybe_create_child_spec(options)
 
     quote do
       use GenServer
 
       unquote(application)
+      unquote(child_spec)
 
       def create() do
         create(unquote(options.initial_state))
@@ -158,6 +179,10 @@ defmodule Component.Strategy.Global do
 
       def destroy() do
         GenServer.stop(unquote(name_opt))
+      end
+
+      def start_link([]) do
+        { :ok, create() }
       end
 
       def start_link(state_override) do

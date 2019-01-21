@@ -19,7 +19,7 @@ defmodule Component.CodeGenHelper do
         def start(_type, _args) do
           children = [
             %{
-              id: __MODULE__.Id,
+              id: __MODULE__,
               start: {__MODULE__, :wrapped_create, []}
             }
           ]
@@ -32,6 +32,32 @@ defmodule Component.CodeGenHelper do
       nil
     end
   end
+
+
+  def maybe_create_child_spec(options) do
+    if spec = options[:child_spec] do
+
+      create_child_spec(spec)
+    end
+  end
+
+  defp create_child_spec(spec) when is_map(spec) do
+    quote do
+      def child_spec(opts) do
+        %{
+          id:       unquote(spec[:id])       || __MODULE__,
+          start:    unquote(spec[:start])    || { __MODULE__, :start_link, [opts] },
+          type:     unquote(spec[:type])     || :worker,
+          restart:  unquote(spec[:restart])  || :permanent,
+          shutdown: unquote(spec[:shutdown]) || 500
+        }
+      end
+    end
+end
+
+defp create_child_spec(_other) do
+  create_child_spec(%{})
+end
 
   @doc false
   def generate_handle_call(options, {one_or_two_way, call, _body}) do

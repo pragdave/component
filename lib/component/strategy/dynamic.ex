@@ -72,6 +72,25 @@ defmodule Component.Strategy.Dynamic do
 
   You can pass a keyword list to `use Component.Strategy.Dynamic`:
 
+  * `child_spec: true`
+
+    Create a default `child_spec/1` function for this component:
+
+    ~~~ elixir
+    %{
+        id:       __MODULE__,
+        start:    { __MODULE__, :start_link, [opts] },
+        type:     :worker,
+        restart:  :permanent,
+        shutdown: 500
+    }
+    ~~~
+
+  * `child_spec: ` _map_
+
+    Create a `child_spec/1` function where values in the map override
+    corresponding values in the default.
+
   * `initial_state:` _value_
 
     The default value for the initial state of all workers. Can be
@@ -135,9 +154,14 @@ defmodule Component.Strategy.Dynamic do
   def emit_code(generated, _target_module, options) do
 
     application = CodeGenHelper.maybe_create_application(options)
+    child_spec  = CodeGenHelper.maybe_create_child_spec(options)
 
     quote do
       @name unquote(options.service_name)
+
+      def start_link(_) do
+        initialize()
+      end
 
       def initialize() do
         Component.Strategy.Dynamic.Supervisor.run(
@@ -162,6 +186,7 @@ defmodule Component.Strategy.Dynamic do
       end
 
       unquote(application)
+      unquote(child_spec)
 
       unquote_splicing(generated.apis)
 
