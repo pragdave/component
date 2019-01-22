@@ -511,7 +511,7 @@ example).
         state_name:    :quote_connection,
         initial_state: Quotes.connect_to_service()
 
-    two_way get_quote(symnbol) do
+    two_way get_quote(symbol) do
       Quotes.get_quote(quote_connection, symbol)
     end
   end
