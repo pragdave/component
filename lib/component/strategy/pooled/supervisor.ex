@@ -43,7 +43,7 @@ defmodule Component.Strategy.Pooled.Supervisor do
       strategy: :one_for_one,
       name: :pb_supervisor,
     ]
-    supervise(children, options)
+    Supervisor.init(children, options)
   end
 
   defp exit_if_no_poolboy() do
