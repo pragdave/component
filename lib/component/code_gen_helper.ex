@@ -36,28 +36,42 @@ defmodule Component.CodeGenHelper do
 
   def maybe_create_child_spec(options) do
     if spec = options[:child_spec] do
-
-      create_child_spec(spec)
+      { actual_spec, _} = Code.eval_quoted(spec)
+      create_child_spec(actual_spec)
     end
   end
 
   defp create_child_spec(spec) when is_map(spec) do
+
+    # this hoop jumping is needed to eliminate the compiler-time
+    # warning if we simply generate "unquote(spec{..}) || default"
+    # (because if spec[] is not nil, then the second value is never used)
+    opt = fn key, quoted_default -> 
+      if Map.has_key?(spec, key), do: spec[key], else: quoted_default
+    end
+
+    id       = opt.(:id,       quote do: __MODULE__)
+    start    = opt.(:start,    quote do: { __MODULE__, :start_link, [opts] })
+    type     = opt.(:type,     quote do: :worker)
+    restart  = opt.(:restart,  quote do: :permanent)
+    shutdown = opt.(:shutdown, quote do: 500)
+
     quote do
       def child_spec(opts) do
         %{
-          id:       unquote(spec[:id])       || __MODULE__,
-          start:    unquote(spec[:start])    || { __MODULE__, :start_link, [opts] },
-          type:     unquote(spec[:type])     || :worker,
-          restart:  unquote(spec[:restart])  || :permanent,
-          shutdown: unquote(spec[:shutdown]) || 500
+          id:       unquote(id),
+          start:    unquote(start),
+          type:     unquote(type),
+          restart:  unquote(restart),
+          shutdown: unquote(shutdown),
         }
       end
     end
-end
+  end
 
-defp create_child_spec(_other) do
-  create_child_spec(%{})
-end
+  defp create_child_spec(_other) do
+    create_child_spec(%{})
+  end
 
   @doc false
   def generate_handle_call(options, {one_or_two_way, call, _body}) do

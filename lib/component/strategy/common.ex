@@ -210,7 +210,7 @@ defmodule Component.Strategy.Common do
    when is_function(when_done_callback) do
      raise """
      You can't have a when_done callback when returning a stream from a
-     Hungry.consume, because the library can't determine what 'done'
+     Hungry.consumer, because the library can't determine what 'done'
      means.
      """
   end
