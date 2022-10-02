@@ -1,6 +1,6 @@
 defmodule Component.CodeGenHelper do
   @moduledoc """
-  Functions that help massage one- and two-way funtion definitions
+  Functions that help massage one- and two-way function definitions
   into real code. These are called from the Strategy@impl functions
   in the Strategy.Xxx modules.
   """
