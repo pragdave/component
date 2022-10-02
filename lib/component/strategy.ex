@@ -79,7 +79,7 @@ defmodule Component.Strategy do
 
   # Orchestrate the production of code for a particular strategy. We're
   # called after the target module has been parsed but before compilation.
-  # All tne one-way and two-way declarations have been tucked away in the
+  # All the one-way and two-way declarations have been tucked away in the
   # preprocessor state: we extract them and get the individual strategies
   # to generate code.
 

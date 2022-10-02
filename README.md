@@ -241,7 +241,7 @@ Elixir world. I've seen many multi-thousand line modules. I've rarely
 seen a Phoenix app where the developers have implemented the business
 logic in other, free-standing apps (and I don't count the things in
 umbrella apps as being free standing, firstly because the individual
-components are not sharable, and secondly because that fact that all the
+components are not shareable, and secondly because that fact that all the
 code is in one place tempts developers to just call randomly between the
 child apps.)
 

@@ -9,7 +9,7 @@ defmodule Component.Strategy.Pooled.Supervisor do
   `worker_module`: the module containing the code for the worker_module
   `pool`:          a specification for the pool
   `min`: number of prestarted workers
-  `max`: can add upto `max - min` demand-based workers
+  `max`: can add up to `max - min` demand-based workers
   """
   def start_link(opts) do
     Supervisor.start_link(__MODULE__, opts)
